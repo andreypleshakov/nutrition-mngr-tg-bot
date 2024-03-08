@@ -1,0 +1,28 @@
+{
+  "name": "telegram_nutrition_manager_bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node src/app.ts",
+    "dev-start": "nodemon --watch \"src/**/*.ts\" --exec \"ts-node\" src/app.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "assert-ts": "^0.3.4",
+    "dotenv": "^16.4.1",
+    "google-auth-library": "^9.6.0",
+    "google-spreadsheet": "^4.1.1",
+    "telegraf": "^4.15.3"
+  },
+  "devDependencies": {
+    "@telegraf/types": "^6.9.1",
+    "@types/node": "^20.11.14",
+    "nodemon": "^3.0.3",
+    "ts-node": "^10.9.2"
+  }
+  
+}
