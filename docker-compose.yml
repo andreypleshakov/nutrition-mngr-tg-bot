@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  bot:
+    build: .
+    env_file:
+      - .env.prod
+    volumes:
+      - "./nutrition-manager-bot-4746fc60f5d9.json:/usr/src/app/nutrition-manager-bot-4746fc60f5d9.json"

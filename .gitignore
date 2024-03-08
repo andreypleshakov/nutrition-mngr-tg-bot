@@ -1,3 +1,4 @@
 node_modules/
 .env
-nutrition-manager-bot-4746fc60f5d9.json
+.env.prod
+nutrition-manager-bot-*.json
