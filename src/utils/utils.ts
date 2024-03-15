@@ -1,6 +1,7 @@
-import { FoodElement, CombinedProduct } from "./models";
+import { FoodElement, CombinedProduct, DailyFood } from "./models";
 import { JWT } from "google-auth-library";
 import { GoogleSpreadsheet } from "google-spreadsheet";
+import { Context } from "telegraf";
 
 export const serviceAccountAuth = new JWT({
   email: process.env.NUTRITION_MGR_EMAIL,
@@ -40,22 +41,24 @@ export const yesAndNoButton = {
 export async function calculateNutrition(
   productName: string,
   mass: number
-): Promise<FoodElement | null> {
+): Promise<DailyFood | null> {
   await doc.loadInfo();
   const sheetBase = doc.sheetsByTitle["products_database"];
   const baseRows = await sheetBase.getRows();
   const targetBaseRow = baseRows.find((row) => row.get("name") === productName);
 
   if (targetBaseRow) {
-    const kcal = targetBaseRow.get("kcal_per_1_gram") * mass;
+    const kcal = parseInt(targetBaseRow.get("kcal_per_1_gram")) * mass;
     const protein = targetBaseRow.get("protein_per_1_gram") * mass;
     const saturated_fat = targetBaseRow.get("sat_fat_per_1_gram") * mass;
     const unsaturated_fat = targetBaseRow.get("unsat_fat_per_1_gram") * mass;
     const carbs = targetBaseRow.get("carbs_per_1_gram") * mass;
+    const totalFat = saturated_fat + unsaturated_fat;
 
-    const nutrition = {} as FoodElement;
+    const nutrition = {} as DailyFood;
     (nutrition.kcal = kcal),
       (nutrition.protein = protein),
+      (nutrition.totalFat = totalFat),
       (nutrition.saturated_fat = saturated_fat),
       (nutrition.unsaturated_fat = unsaturated_fat),
       (nutrition.carbs = carbs);
@@ -65,8 +68,9 @@ export async function calculateNutrition(
 
   return null;
 }
+
 export async function addCalculatedNutrition(
-  nutrition: FoodElement,
+  nutrition: DailyFood,
   date: string
 ): Promise<void> {
   const sheetDaily = doc.sheetsByTitle["daily_statistics"];
@@ -76,26 +80,31 @@ export async function addCalculatedNutrition(
   if (targetDailyRow) {
     const existingKcal = targetDailyRow.get("kcal");
     const existingProtein = targetDailyRow.get("protein (g)");
-    const existingSaturated_fat = targetDailyRow.get("saturated_fat (g)");
-    const existingUnsaturated_fat = targetDailyRow.get("unsaturated_fat (g)");
-    const existingCarbs = targetDailyRow.get("carbohydrates (g)"); // Corrected variable name
+    const existingTotal_fat = targetDailyRow.get("total_fat (g)");
+    const existingCarbs = targetDailyRow.get("carbohydrates (g)");
 
     nutrition.kcal += existingKcal;
     nutrition.protein += existingProtein;
-    nutrition.saturated_fat += existingSaturated_fat;
-    nutrition.unsaturated_fat += existingUnsaturated_fat;
+    nutrition.totalFat += existingTotal_fat;
     nutrition.carbs += existingCarbs;
 
     await targetDailyRow.delete();
   }
+  const sumNutrition = nutrition.protein + nutrition.totalFat + nutrition.carbs;
 
   const DailyFoodElement = await sheetDaily.addRow([
     date,
     nutrition.kcal,
     nutrition.protein,
-    nutrition.saturated_fat,
-    nutrition.unsaturated_fat,
+    nutrition.totalFat,
     nutrition.carbs,
+    (nutrition.proteinPercent = (nutrition.protein / sumNutrition) * 100),
+    (nutrition.totalFatPercent = (nutrition.totalFat / sumNutrition) * 100),
+    (nutrition.carbPercent = (nutrition.carbs / sumNutrition) * 100),
+    (nutrition.satFatPercent =
+      (nutrition.saturated_fat / nutrition.totalFat) * 100),
+    (nutrition.unsatFatPercent =
+      (nutrition.unsaturated_fat / nutrition.totalFat) * 100),
   ]);
 
   await DailyFoodElement.save();
@@ -144,7 +153,7 @@ export async function getProductDetails(
   return null;
 }
 
-export async function replaceProductData(product: FoodElement) {
+export async function replaceProductData(product: FoodElement): Promise<void> {
   await doc.loadInfo();
   const sheet = doc.sheetsByTitle["products_database"];
 
@@ -167,12 +176,12 @@ export async function replaceProductData(product: FoodElement) {
       });
 
       await row.save();
-      return true; // Product updated
     }
   }
-  return false; // Product not found
 }
-export async function addElementToSheet(foodElement: FoodElement) {
+export async function addElementToSheet(
+  foodElement: FoodElement
+): Promise<void> {
   await doc.loadInfo();
   const sheet = doc.sheetsByTitle["products_database"];
 
@@ -187,6 +196,32 @@ export async function addElementToSheet(foodElement: FoodElement) {
     carbs,
   ]);
   await addFoodElemnt.save();
+}
+
+export async function getDailyStatistic(
+  date: string
+): Promise<DailyFood | null> {
+  await doc.loadInfo();
+  const sheet = doc.sheetsByTitle["daily_statistics"];
+  const rows = await sheet.getRows();
+  const row = rows.find((row) => row.get("date") === date);
+
+  if (row) {
+    const dailyStat = {} as DailyFood;
+    (dailyStat.dateOfDaily = row.get("date")),
+      (dailyStat.kcal = row.get("kcal")),
+      (dailyStat.protein = row.get("protein (g)")),
+      (dailyStat.totalFat = row.get("total_fat (g)")),
+      (dailyStat.carbs = row.get("carbohydrates (g)")),
+      (dailyStat.proteinPercent = row.get("protein (%)")),
+      (dailyStat.totalFatPercent = row.get("fat (%)")),
+      (dailyStat.carbPercent = row.get("carbohydrates (%)")),
+      (dailyStat.satFatPercent = row.get("saturated_fat (%)")),
+      (dailyStat.unsatFatPercent = row.get("unsaturated_fat (%)"));
+    return dailyStat;
+  }
+
+  return null;
 }
 
 export function isValidDateFormat(date: string): boolean {
@@ -275,4 +310,18 @@ export function checkFormatOfProduct(userInput: string): boolean {
   }
 
   return true;
+}
+
+export function replaceCommaToDot(input: string): number {
+  return parseFloat(input.replace(",", "."));
+}
+
+///////////////////////
+
+function getFormatedProductInfo(arrayOfData: [string, string][]) {
+  return arrayOfData
+    .map(([name, value]) => {
+      return `${name}: ${value}`;
+    })
+    .join("\n");
 }

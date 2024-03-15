@@ -5,9 +5,9 @@ import {
   yesAndNoButton,
   yesOrNoButton,
   textIsNumber,
-  nextStep,
   calculateNutrition,
   addCalculatedNutrition,
+  replaceCommaToDot,
 } from "../utils/utils";
 import { DailyFood, DialogueState } from "../utils/models";
 import {
@@ -15,9 +15,7 @@ import {
   nameOfProductStep,
   isAddTheProductStep,
   massOfProductStep,
-  combineProductInfoStep,
   isFixingSomethingStep,
-  calculateAndAddNutritionStep,
 } from "../stepsForScenes/addTodayFoodToBaseSteps";
 
 export const addTodayFoodToBase = new Scenes.WizardScene<Scenes.WizardContext>(
@@ -31,10 +29,10 @@ export const addTodayFoodToBase = new Scenes.WizardScene<Scenes.WizardContext>(
 
   // waiting of the date of the daily product
   async (ctx) => {
-    if (!ctx.message || (ctx.message && !("text" in ctx.message))) {
+    if (!ctx.message || !("text" in ctx.message)) {
       return;
     }
-    await ctx.reply(`Index: ${ctx.wizard.cursor}`); // Step: 1
+
     if (!isValidDateFormat(ctx.message.text)) {
       await ctx.reply("Wrong date format");
       return;
@@ -48,19 +46,17 @@ export const addTodayFoodToBase = new Scenes.WizardScene<Scenes.WizardContext>(
 
   // waiting of the name of the product
   async (ctx) => {
-    if (!ctx.message || (ctx.message && !("text" in ctx.message))) {
+    if (!ctx.message || !("text" in ctx.message)) {
       return;
     }
-    await ctx.reply(`Index: ${ctx.wizard.cursor}`); // Step: 2
-    const productName = ctx.message.text;
+
+    const productName = ctx.message.text.trim();
     (ctx.wizard.state as DailyFood).name = productName;
     if (ctx.message.text === undefined) {
       await ctx.reply("Wrong, write a product name");
       return;
     }
     if (await existenceOfTheSameProduct(productName)) {
-      await ctx.reply("Product exists in database");
-
       await ctx.reply("Mass of product in grams");
       return ctx.wizard.selectStep(massOfProductStep);
     }
@@ -71,7 +67,6 @@ export const addTodayFoodToBase = new Scenes.WizardScene<Scenes.WizardContext>(
 
   // waiting for "yes" or "no" answer of adding the product
   async (ctx) => {
-    await ctx.reply(`Index: ${ctx.wizard.cursor}`); // Step: 3
     const succesButton = yesOrNoButton(ctx);
     await ctx.answerCbQuery(undefined);
     if (succesButton) {
@@ -85,32 +80,28 @@ export const addTodayFoodToBase = new Scenes.WizardScene<Scenes.WizardContext>(
       "You can't count nutrition of your daily product because it does not exist in product base"
     );
     await ctx.reply("If you want to enter new product use comman /add_product");
-    return await ctx.scene.leave();
+    return ctx.scene.leave();
   },
 
   // waiting for the mass of the product
   async (ctx) => {
-    if (!ctx.message || (ctx.message && !("text" in ctx.message))) {
+    if (!ctx.message || !("text" in ctx.message)) {
       return;
     }
-    await ctx.reply(`Index: ${ctx.wizard.cursor}`); // Step: 4
+
     if (!textIsNumber(ctx.message.text)) {
       await ctx.reply("Wrong, write a number");
       return;
     }
 
-    (ctx.wizard.state as DailyFood).mass = parseInt(ctx.message.text);
-    await ctx.reply("Press Next to calculate nutrition", nextStep);
-    return ctx.wizard.selectStep(combineProductInfoStep);
-  },
+    const actualState = ctx.wizard.state as DailyFood;
 
-  // combine the saved product information into one message
-  async (ctx) => {
-    await ctx.reply(`Index: ${ctx.wizard.cursor}`); // Step: 5
+    actualState.mass = replaceCommaToDot(ctx.message.text);
+
     const productInfo = `
-      Date: ${(ctx.wizard.state as DailyFood).dateOfDaily}
-      Product Name: ${(ctx.wizard.state as DailyFood).name}
-      Mass: ${(ctx.wizard.state as DailyFood).mass + " g"}`;
+      Date: ${actualState.dateOfDaily}
+      Product Name: ${actualState.name}
+      Mass: ${actualState.mass + " g"}`;
 
     await ctx.reply(productInfo);
 
@@ -118,33 +109,32 @@ export const addTodayFoodToBase = new Scenes.WizardScene<Scenes.WizardContext>(
     return ctx.wizard.selectStep(isFixingSomethingStep);
   },
 
-  // waiting for "yes" or "no" answer of fixing something
+  // waiting for "yes" or "no" answer of fixing something and finish stage
   async (ctx) => {
-    await ctx.reply(`Index: ${ctx.wizard.cursor}`); // Step: 6
     const succesButton = yesOrNoButton(ctx);
     await ctx.answerCbQuery(undefined);
     if (succesButton) {
       await ctx.reply("Date of daily product in this format: DD.MM.YYYY");
       return ctx.wizard.selectStep(dateOfDailyProductStep);
     }
-    await ctx.reply("Press Next to calculate nutrition", nextStep);
-    return ctx.wizard.selectStep(calculateAndAddNutritionStep);
-  },
 
-  // final step to calculate nutrition and add it to the daily statistics
-  async (ctx) => {
-    await ctx.reply(`Index: ${ctx.wizard.cursor}`); // Step: 7
-    const productName = (ctx.wizard.state as DailyFood).name;
-    const mass = (ctx.wizard.state as DailyFood).mass;
-    const date = (ctx.wizard.state as DailyFood).dateOfDaily;
+    await ctx.reply("Wait till results will be calculated");
+
+    const actualState = ctx.wizard.state as DailyFood;
+    const productName = actualState.name;
+    const mass = actualState.mass;
+    const date = actualState.dateOfDaily;
+
     if (await existenceOfTheSameProduct(productName)) {
       const nutrition = await calculateNutrition(productName, mass);
+      console.log(nutrition);
+
       if (nutrition) {
         await addCalculatedNutrition(nutrition, date);
       }
     }
-    await ctx.answerCbQuery(undefined);
+
     await ctx.reply("Product is calculated and added to daily statistics");
-    return await ctx.scene.leave();
+    return ctx.scene.leave();
   }
 );

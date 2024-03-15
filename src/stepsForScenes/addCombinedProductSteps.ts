@@ -4,7 +4,6 @@ import {
   existenceOfTheSameProduct,
   yesAndNoButton,
   yesOrNoButton,
-  nextStep,
   doneButton,
   addElementToSheet,
   isDoneButton,
@@ -19,7 +18,6 @@ const STEPS = [
   isReplaceTheProduct,
   waitingForNameAndMassOfProduct,
   isAddTheProduct,
-  countNutritionAndAddToDatabase,
 ];
 
 export const startingDialogueStep = STEPS.findIndex(
@@ -41,11 +39,6 @@ export const waitingForNameAndMassOfProductStep = STEPS.findIndex(
 export const isAddTheProductStep = STEPS.findIndex(
   (schene) => schene === isAddTheProduct
 );
-
-export const countNutritionAndAddToDatabaseStep = STEPS.findIndex(
-  (schene) => schene === countNutritionAndAddToDatabase
-);
-
 //////////////////////////////////////
 
 // function: start of the dialogue
@@ -57,9 +50,10 @@ async function startingDialogue(ctx: Scenes.WizardContext) {
 
 // function: waiting of the name of the combined product
 async function waitingForProductName(ctx: Scenes.WizardContext) {
-  if (!ctx.message || (ctx.message && !("text" in ctx.message))) {
+  if (!ctx.message || !("text" in ctx.message)) {
     return;
   }
+
   await ctx.reply(`Index: ${ctx.wizard.cursor}`); // Step: 1
 
   const combinedProductName = ctx.message.text.trim();
@@ -74,9 +68,11 @@ async function waitingForProductName(ctx: Scenes.WizardContext) {
     return ctx.wizard.next();
   }
 
-  (ctx.wizard.state as CombinedProduct).CombinedName = combinedProductName;
-  (ctx.wizard.state as CombinedProduct).CombinedMass = 0;
-  (ctx.wizard.state as CombinedProduct).products = {};
+  const actualState = ctx.wizard.state as CombinedProduct;
+
+  actualState.CombinedName = combinedProductName;
+  actualState.CombinedMass = 0;
+  actualState.products = {};
 
   await ctx.reply(
     "Enter the name and mass (in gram) of the first product to start combining in this format: NAME MASS"
@@ -99,22 +95,29 @@ async function isReplaceTheProduct(ctx: Scenes.WizardContext) {
   } else {
     await ctx.reply("You can't have two equal products in product base");
     await ctx.reply("If you want to enter new product use comman /add_product");
-    return await ctx.scene.leave();
+    return ctx.scene.leave();
   }
 }
 
 // function: waiting for the name and mass of the product
 async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
+  await ctx.reply(`Index: ${ctx.wizard.cursor}`); // Step: 3
+
+  const actualState = ctx.wizard.state as CombinedProduct;
+
   const done = isDoneButton(ctx);
   if (done) {
-    await ctx.reply("Press Next to calculate nutrition", nextStep);
-    return ctx.wizard.selectStep(5);
+    await ctx.answerCbQuery(undefined);
+    const combinedProduct = actualState.CombinedName;
+    const finalNutrition = combineNutrition(actualState);
+    await addElementToSheet(finalNutrition);
+    await ctx.reply(`Product ${combinedProduct} created and added to database`);
+    return ctx.scene.leave();
   }
-  // get product from the message
-  if (!ctx.message || (ctx.message && !("text" in ctx.message))) {
+
+  if (!ctx.message || !("text" in ctx.message)) {
     return;
   }
-  await ctx.reply(`Index: ${ctx.wizard.cursor}`); // Step: 3
 
   const inputProduct = ctx.message.text.trim();
 
@@ -138,11 +141,10 @@ async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
     return ctx.wizard.next();
   }
 
-  (ctx.wizard.state as CombinedProduct).products[productName] = product;
-  (ctx.wizard.state as CombinedProduct).products[productName].mass =
-    productMass;
-  (ctx.wizard.state as CombinedProduct).actualProductName = productName;
-  (ctx.wizard.state as CombinedProduct).CombinedMass += productMass;
+  actualState.products[productName] = product;
+  actualState.products[productName].mass = productMass;
+  actualState.actualProductName = productName;
+  actualState.CombinedMass += productMass;
 
   await ctx.reply(
     `Enter the name and mass (in gram) of the next product to combine in this format: NAME MASS press Done to calculate nutrition`,
@@ -167,18 +169,7 @@ async function isAddTheProduct(ctx: Scenes.WizardContext) {
     "You can't create combined product because this product does not exist in product base"
   );
   await ctx.reply("If you want to enter new product use command /add_product");
-  return await ctx.scene.leave();
-}
-
-// function: count nutrition of combined product and add it to database
-async function countNutritionAndAddToDatabase(ctx: Scenes.WizardContext) {
-  await ctx.reply(`Index: ${ctx.wizard.cursor}`); // Step: 5
-  await ctx.answerCbQuery(undefined);
-  const combinedProduct = (ctx.wizard.state as CombinedProduct).CombinedName;
-  const finalNutrition = combineNutrition(ctx.wizard.state as CombinedProduct);
-  await addElementToSheet(finalNutrition);
-  await ctx.reply(`Product ${combinedProduct} created and added to database`);
-  return await ctx.scene.leave();
+  return ctx.scene.leave();
 }
 
 ////////////// TO DO: STEP OF FIXING SOMETHING

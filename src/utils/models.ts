@@ -2,6 +2,7 @@ export interface DialogueState extends FoodElement {
   updateProduct: boolean;
   fromDailyProduct: boolean;
   fromCombinedProduct: boolean;
+  
 }
 
 export interface FoodElement {
@@ -14,10 +15,16 @@ export interface FoodElement {
   carbs: number;
 }
 
-export interface DailyFood {
+export interface DailyFood extends FoodElement {
   dateOfDaily: string;
   name: string;
   mass: number;
+  totalFat: number;
+  proteinPercent: number;
+  totalFatPercent: number;
+  carbPercent: number;
+  satFatPercent: number;
+  unsatFatPercent: number;
 }
 
 export interface CombinedProduct {
