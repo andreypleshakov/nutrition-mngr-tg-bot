@@ -26,7 +26,6 @@ import {
 /////////add product data to product_database
 export const addProductToBase = new Scenes.WizardScene<Scenes.WizardContext>(
   "ADD_PRODUCT_TO_BASE",
-  ...STEPS
 
   // start of the dialogue
   async (ctx) => {
