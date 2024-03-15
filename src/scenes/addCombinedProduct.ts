@@ -2,9 +2,8 @@ import { Scenes } from "telegraf";
 import { CombinedProduct, DialogueState } from "../utils/models";
 import {
   existenceOfTheSameProduct,
-  yesAndNoButton,
+  getYesOrNoButton,
   yesOrNoButton,
-  nextStep,
   doneButton,
   addElementToSheet,
   isDoneButton,
@@ -43,7 +42,7 @@ export const addCombinedProduct = new Scenes.WizardScene<Scenes.WizardContext>(
     }
     if (await existenceOfTheSameProduct(combinedProductName)) {
       await ctx.reply("Product exists in database");
-      await ctx.reply("Do you want to replace it?", yesAndNoButton);
+      await ctx.reply("Do you want to replace it?", yesOrNoButton);
       return ctx.wizard.selectStep(isReplaceTheProductStep);
     }
 
@@ -61,7 +60,7 @@ export const addCombinedProduct = new Scenes.WizardScene<Scenes.WizardContext>(
 
   // STEP 2: Waiting for "yes" or "no" answer of replace the product
   async (ctx) => {
-    const succesButton = yesOrNoButton(ctx);
+    const succesButton = getYesOrNoButton(ctx);
     await ctx.answerCbQuery(undefined);
     if (succesButton) {
       (ctx.wizard.state as CombinedProduct).existanceCombined = true;
@@ -118,7 +117,7 @@ export const addCombinedProduct = new Scenes.WizardScene<Scenes.WizardContext>(
     const product = await getProductDetails(productName);
     if (product === null) {
       await ctx.reply("Product does not exist in database");
-      await ctx.reply("Do you want to add it?", yesAndNoButton);
+      await ctx.reply("Do you want to add it?", yesOrNoButton);
       return ctx.wizard.selectStep(isAddTheProductStep);
     }
 
@@ -136,7 +135,7 @@ export const addCombinedProduct = new Scenes.WizardScene<Scenes.WizardContext>(
 
   // STEP 4: Waiting for "yes" or "no" answer of adding the product
   async (ctx) => {
-    const succesButton = yesOrNoButton(ctx);
+    const succesButton = getYesOrNoButton(ctx);
     await ctx.answerCbQuery(undefined);
     if (succesButton) {
       let initalState = {} as DialogueState;

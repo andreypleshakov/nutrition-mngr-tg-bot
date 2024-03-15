@@ -1,7 +1,6 @@
 import { FoodElement, CombinedProduct, DailyFood } from "./models";
 import { JWT } from "google-auth-library";
 import { GoogleSpreadsheet } from "google-spreadsheet";
-import { Context } from "telegraf";
 
 export const serviceAccountAuth = new JWT({
   email: process.env.NUTRITION_MGR_EMAIL,
@@ -27,7 +26,7 @@ export const nextStep = {
   },
 };
 
-export const yesAndNoButton = {
+export const yesOrNoButton = {
   reply_markup: {
     inline_keyboard: [
       [
@@ -37,6 +36,29 @@ export const yesAndNoButton = {
     ],
   },
 };
+
+export function getFixButtonProductBase(state: FoodElement) {
+  return {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "Product Name", callback_data: state.name },
+          { text: "Calories", callback_data: `${state.kcal}` },
+          { text: "Proteins", callback_data: `${state.protein}` },
+          {
+            text: "Saturated fats",
+            callback_data: `${state.saturated_fat}`,
+          },
+          {
+            text: "Unsaturated fats",
+            callback_data: `${state.unsaturated_fat}`,
+          },
+          { text: "Carbohydrates", callback_data: `${state.carbs}` },
+        ],
+      ],
+    },
+  };
+}
 
 export async function calculateNutrition(
   productName: string,
@@ -233,7 +255,7 @@ export function isValidDateFormat(date: string): boolean {
   return true;
 }
 
-export function yesOrNoButton(ctx: any): boolean {
+export function getYesOrNoButton(ctx: any): boolean {
   if (
     ctx.callbackQuery !== undefined &&
     (ctx.callbackQuery as any).data === "bot-yes"
@@ -317,8 +339,27 @@ export function replaceCommaToDot(input: string): number {
 }
 
 ///////////////////////
+//: Record<Exclude<keyof FoodElement, 'mass'>, string>
+const FIELD_TO_PRODUCT_INFO: Record<string, string> = {
+  name: 'Product name',
+  kcal: 'Calories',
+  protein: 'Proteins',
+  saturated_fat: 'Saturated fats',
+  unsaturated_fat: 'Unsaturated fats',
+  carbs: 'Carbohydrates',
+}
 
-function getFormatedProductInfo(arrayOfData: [string, string][]) {
+// getFormatedText(state, FIELD_TO_PRODUCT_INFO)
+
+function getProductInfoString(state: FoodElement): string {
+  const keys = Object.keys(state)
+  const data = keys.map((key): [string, string | number] => {
+    return [FIELD_TO_PRODUCT_INFO[key], state[key as keyof FoodElement]]
+  })
+  return getFormatedString(data);
+}
+
+function getFormatedString(arrayOfData: [string, string | number][]) {
   return arrayOfData
     .map(([name, value]) => {
       return `${name}: ${value}`;

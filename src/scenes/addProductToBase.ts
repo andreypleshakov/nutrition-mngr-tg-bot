@@ -2,12 +2,13 @@ import { Scenes } from "telegraf";
 import { DialogueState, FoodElement } from "../utils/models";
 import {
   existenceOfTheSameProduct,
-  yesAndNoButton,
+  getYesOrNoButton,
   yesOrNoButton,
   textIsNumber,
   replaceProductData,
   addElementToSheet,
   replaceCommaToDot,
+  getFixButtonProductBase,
 } from "../utils/utils";
 import {
   STEPS,
@@ -30,7 +31,6 @@ export const addProductToBase = new Scenes.WizardScene<Scenes.WizardContext>(
   // start of the dialogue
   async (ctx) => {
     await ctx.reply("Name of product");
-    await ctx.reply("pisa popa");
     return ctx.wizard.selectStep(waitingForProductNameStep);
   },
 
@@ -48,9 +48,17 @@ export const addProductToBase = new Scenes.WizardScene<Scenes.WizardContext>(
 
     (ctx.wizard.state as DialogueState).name = ctx.message.text;
 
+    if ((ctx.wizard.state as DialogueState).fromFixingStep) {
+      await ctx.reply(
+        "Press YES if you want to fix something else or NO if you want to add product to database",
+        yesOrNoButton
+      );
+      return ctx.wizard.selectStep(IsFixingSomethingAndFinalStep);
+    }
+
     if (await existenceOfTheSameProduct(productName)) {
       await ctx.reply("Product already exists");
-      await ctx.reply("Do you want to replace it?", yesAndNoButton);
+      await ctx.reply("Do you want to replace it?", yesOrNoButton);
 
       return ctx.wizard.selectStep(isReplacingTheProductStep);
     }
@@ -61,7 +69,7 @@ export const addProductToBase = new Scenes.WizardScene<Scenes.WizardContext>(
 
   // waiting for "yes" or "no" answer of replacing the product
   async (ctx) => {
-    const succesButton = yesOrNoButton(ctx);
+    const succesButton = getYesOrNoButton(ctx);
     await ctx.answerCbQuery(undefined);
     if (succesButton) {
       (ctx.wizard.state as DialogueState).updateProduct = true;
@@ -182,7 +190,7 @@ export const addProductToBase = new Scenes.WizardScene<Scenes.WizardContext>(
 
     await ctx.reply(productInfo);
 
-    await ctx.reply("Do you want to fix something?", yesAndNoButton);
+    await ctx.reply("Do you want to fix something?", yesOrNoButton);
     return ctx.wizard.selectStep(IsFixingSomethingAndFinalStep);
   },
 
@@ -190,35 +198,17 @@ export const addProductToBase = new Scenes.WizardScene<Scenes.WizardContext>(
   async (ctx) => {
     const actualState = ctx.wizard.state as FoodElement;
 
-    const fixButtonProductBase = {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: "Product Name", callback_data: actualState.name },
-            { text: "Calories", callback_data: `${actualState.kcal}` },
-            { text: "Proteins", callback_data: `${actualState.protein}` },
-            {
-              text: "Saturated fats",
-              callback_data: `${actualState.saturated_fat}`,
-            },
-            {
-              text: "Unsaturated fats",
-              callback_data: `${actualState.unsaturated_fat}`,
-            },
-            { text: "Carbohydrates", callback_data: `${actualState.carbs}` },
-          ],
-        ],
-      },
-    };
+    if (!(ctx.wizard.state as DialogueState).fromFixingStep) {
+      const fixButtonProductBase = getFixButtonProductBase(actualState);
 
-    const succesButton = yesOrNoButton(ctx);
-    await ctx.answerCbQuery(undefined);
+      const succesButton = getYesOrNoButton(ctx);
+      await ctx.answerCbQuery(undefined);
 
-    if (succesButton) {
-      await ctx.reply("Choose what you want ot fix", fixButtonProductBase);
-      return ctx.wizard.selectStep(fixingSomethingAndFinalStep);
+      if (succesButton) {
+        await ctx.reply("Choose what you want ot fix", fixButtonProductBase);
+        return ctx.wizard.selectStep(fixingSomethingAndFinalStep);
+      }
     }
-
     if ((ctx.scene.state as DialogueState).updateProduct) {
       await replaceProductData(actualState);
       await ctx.reply("Product data updated in database");
@@ -235,6 +225,8 @@ export const addProductToBase = new Scenes.WizardScene<Scenes.WizardContext>(
     if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
       return;
     }
+
+    (ctx.wizard.state as DialogueState).fromFixingStep = true;
 
     const actualState = ctx.wizard.state as FoodElement;
 

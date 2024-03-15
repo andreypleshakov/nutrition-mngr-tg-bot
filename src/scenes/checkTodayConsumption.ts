@@ -1,6 +1,6 @@
 import { Scenes } from "telegraf";
 import {
-  yesAndNoButton,
+  getYesOrNoButton,
   yesOrNoButton,
   getDailyStatistic,
 } from "../utils/utils";
@@ -24,7 +24,7 @@ export const checkTodayConsumption =
         await ctx.reply(`You did not eat anything today(${todayDate})`);
         await ctx.reply(
           "Do you want to fill your daily consumption? (you will be sent to fill daily statistic)",
-          yesAndNoButton
+          yesOrNoButton
         );
         return ctx.wizard.next();
       }
@@ -49,7 +49,7 @@ export const checkTodayConsumption =
 
     //STEP 1: Waiting for "yes"/"no" answer and finishing scene
     async (ctx) => {
-      const success = yesOrNoButton(ctx);
+      const success = getYesOrNoButton(ctx);
       await ctx.answerCbQuery(undefined);
       if (success) {
         let initalState = {} as DialogueState;

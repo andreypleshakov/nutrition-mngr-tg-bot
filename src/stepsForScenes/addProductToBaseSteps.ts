@@ -1,7 +1,7 @@
 import { Context, Middleware, Scenes } from "telegraf";
 import { DialogueState, FoodElement } from "../utils/models";
 import {
-  yesAndNoButton,
+  getYesOrNoButton,
   yesOrNoButton,
   textIsNumber,
   replaceProductData,
@@ -88,7 +88,7 @@ async function waitingForProductName(ctx: Scenes.WizardContext) {
 // function: waiting for "yes" or "no" answer of replacing the product
 async function isReplacingTheProduct(ctx: Scenes.WizardContext) {
   await ctx.reply(`Index: ${ctx.wizard.cursor}`); // Step: 2
-  const succesButton = yesOrNoButton(ctx);
+  const succesButton = getYesOrNoButton(ctx);
   await ctx.answerCbQuery(undefined);
   if (succesButton) {
     (ctx.wizard.state as DialogueState).updateProduct = true;
@@ -221,7 +221,7 @@ async function carbohydratesPerGram(ctx: Scenes.WizardContext) {
 
   await ctx.reply(productInfo);
 
-  await ctx.reply("Do you want to fix something?", yesAndNoButton);
+  await ctx.reply("Do you want to fix something?", yesOrNoButton);
   return ctx.wizard.next();
 }
 
@@ -252,7 +252,7 @@ async function IsFixingSomethingAndFinal(ctx: Scenes.WizardContext) {
     },
   };
 
-  const succesButton = yesOrNoButton(ctx);
+  const succesButton = getYesOrNoButton(ctx);
   await ctx.answerCbQuery(undefined);
 
   if (succesButton) {

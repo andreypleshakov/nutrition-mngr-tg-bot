@@ -2,7 +2,7 @@ export interface DialogueState extends FoodElement {
   updateProduct: boolean;
   fromDailyProduct: boolean;
   fromCombinedProduct: boolean;
-  
+  fromFixingStep: boolean;
 }
 
 export interface FoodElement {

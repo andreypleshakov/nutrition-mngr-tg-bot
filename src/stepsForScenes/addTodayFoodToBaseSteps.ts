@@ -1,7 +1,7 @@
 import { Scenes } from "telegraf";
 import { DialogueState, DailyFood } from "../utils/models";
 import {
-  yesAndNoButton,
+  getYesOrNoButton,
   yesOrNoButton,
   textIsNumber,
   isValidDateFormat,
@@ -91,14 +91,14 @@ async function nameOfProduct(ctx: Scenes.WizardContext) {
     return ctx.wizard.selectStep(4);
   }
   await ctx.reply("Product does not exist in database");
-  await ctx.reply("Do you want to add it?", yesAndNoButton);
+  await ctx.reply("Do you want to add it?", yesOrNoButton);
   return ctx.wizard.next();
 }
 
 // function: waiting for "yes" or "no" answer of adding the product
 async function isAddTheProduct(ctx: Scenes.WizardContext) {
   await ctx.reply(`Index: ${ctx.wizard.cursor}`); // Step: 3
-  const succesButton = yesOrNoButton(ctx);
+  const succesButton = getYesOrNoButton(ctx);
   await ctx.answerCbQuery(undefined);
   if (succesButton) {
     let initalState = {} as DialogueState;
@@ -137,14 +137,14 @@ async function massOfProduct(ctx: Scenes.WizardContext) {
 
   await ctx.reply(productInfo);
 
-  await ctx.reply("Do you want to fix something?", yesAndNoButton);
+  await ctx.reply("Do you want to fix something?", yesOrNoButton);
   return ctx.wizard.next();
 }
 
 // function: waiting for "yes" or "no" answer of fixing something
 async function isFixingSomething(ctx: Scenes.WizardContext) {
   await ctx.reply(`Index: ${ctx.wizard.cursor}`); // Step: 6
-  const succesButton = yesOrNoButton(ctx);
+  const succesButton = getYesOrNoButton(ctx);
   await ctx.answerCbQuery(undefined);
   if (succesButton) {
     await ctx.reply("Date of daily product in this format DD.MM.YYYY");

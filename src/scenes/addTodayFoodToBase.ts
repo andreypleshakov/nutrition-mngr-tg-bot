@@ -2,7 +2,7 @@ import { Scenes } from "telegraf";
 import {
   isValidDateFormat,
   existenceOfTheSameProduct,
-  yesAndNoButton,
+  getYesOrNoButton,
   yesOrNoButton,
   textIsNumber,
   calculateNutrition,
@@ -61,13 +61,13 @@ export const addTodayFoodToBase = new Scenes.WizardScene<Scenes.WizardContext>(
       return ctx.wizard.selectStep(massOfProductStep);
     }
     await ctx.reply("Product does not exist in database");
-    await ctx.reply("Do you want to add it?", yesAndNoButton);
+    await ctx.reply("Do you want to add it?", yesOrNoButton);
     return ctx.wizard.selectStep(isAddTheProductStep);
   },
 
   // waiting for "yes" or "no" answer of adding the product
   async (ctx) => {
-    const succesButton = yesOrNoButton(ctx);
+    const succesButton = getYesOrNoButton(ctx);
     await ctx.answerCbQuery(undefined);
     if (succesButton) {
       let initalState = {} as DialogueState;
@@ -105,13 +105,13 @@ export const addTodayFoodToBase = new Scenes.WizardScene<Scenes.WizardContext>(
 
     await ctx.reply(productInfo);
 
-    await ctx.reply("Do you want to fix something?", yesAndNoButton);
+    await ctx.reply("Do you want to fix something?", yesOrNoButton);
     return ctx.wizard.selectStep(isFixingSomethingStep);
   },
 
   // waiting for "yes" or "no" answer of fixing something and finish stage
   async (ctx) => {
-    const succesButton = yesOrNoButton(ctx);
+    const succesButton = getYesOrNoButton(ctx);
     await ctx.answerCbQuery(undefined);
     if (succesButton) {
       await ctx.reply("Date of daily product in this format: DD.MM.YYYY");
