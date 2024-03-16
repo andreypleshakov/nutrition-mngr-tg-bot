@@ -276,21 +276,21 @@ export const addProductToBase = new Scenes.WizardScene<Scenes.WizardContext>(
       await ctx.answerCbQuery();
 
       switch (callBackData) {
-        case actualState.name:
+        case "name":
           return ctx.wizard.selectStep(startingDialogueStep);
-        case `${actualState.kcal}`:
+        case "kcal":
           await ctx.reply("Calories per 1 gram");
           return ctx.wizard.selectStep(kcalsPerGramStep);
-        case `${actualState.protein}`:
+        case "protein":
           await ctx.reply("Proteins per 1 gram");
           return ctx.wizard.selectStep(proteinsPerGramStep);
-        case `${actualState.saturated_fat}`:
+        case "saturated_fat":
           await ctx.reply("Saturated fats per 1 gram");
           return ctx.wizard.selectStep(saturatedFatPerGramStep);
-        case `${actualState.unsaturated_fat}`:
+        case "unsaturated_fat":
           await ctx.reply("Unsaturated fats per 1 gram");
           return ctx.wizard.selectStep(unsaturatedFatPerGramStep);
-        case `${actualState.carbs}`:
+        case "carbs":
           await ctx.reply("Carbohydrates per 1 gram");
           return ctx.wizard.selectStep(carbohydratesPerGramStep);
       }

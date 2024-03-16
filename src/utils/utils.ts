@@ -42,18 +42,18 @@ export function getFixButtonProductBase(state: FoodElement) {
     reply_markup: {
       inline_keyboard: [
         [
-          { text: "Product Name", callback_data: state.name },
-          { text: "Calories", callback_data: `${state.kcal}` },
-          { text: "Proteins", callback_data: `${state.protein}` },
+          { text: "Product Name", callback_data: "name" },
+          { text: "Calories", callback_data: "kcal" },
+          { text: "Proteins", callback_data: "protein" },
           {
             text: "Saturated fats",
-            callback_data: `${state.saturated_fat}`,
+            callback_data: "saturated_fat",
           },
           {
             text: "Unsaturated fats",
-            callback_data: `${state.unsaturated_fat}`,
+            callback_data: "unsaturated_fat",
           },
-          { text: "Carbohydrates", callback_data: `${state.carbs}` },
+          { text: "Carbohydrates", callback_data: "carbs" },
         ],
       ],
     },
