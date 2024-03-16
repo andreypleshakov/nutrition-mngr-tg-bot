@@ -308,6 +308,8 @@ async function fixingSomethingAndFinal(ctx: Scenes.WizardContext) {
 
   const callBackData = ctx.callbackQuery.data;
 
+  // there is an issue with all cases
+
   if (ctx.callbackQuery !== undefined) {
     await ctx.answerCbQuery();
 

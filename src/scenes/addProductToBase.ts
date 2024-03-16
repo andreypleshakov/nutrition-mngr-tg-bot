@@ -270,6 +270,8 @@ export const addProductToBase = new Scenes.WizardScene<Scenes.WizardContext>(
 
     const callBackData = ctx.callbackQuery.data;
 
+    // there is an issue with all cases
+
     if (ctx.callbackQuery !== undefined) {
       await ctx.answerCbQuery();
 
