@@ -341,21 +341,21 @@ export function replaceCommaToDot(input: string): number {
 ///////////////////////
 //: Record<Exclude<keyof FoodElement, 'mass'>, string>
 const FIELD_TO_PRODUCT_INFO: Record<string, string> = {
-  name: 'Product name',
-  kcal: 'Calories',
-  protein: 'Proteins',
-  saturated_fat: 'Saturated fats',
-  unsaturated_fat: 'Unsaturated fats',
-  carbs: 'Carbohydrates',
-}
+  name: "Product name",
+  kcal: "Calories",
+  protein: "Proteins",
+  saturated_fat: "Saturated fats",
+  unsaturated_fat: "Unsaturated fats",
+  carbs: "Carbohydrates",
+};
 
 // getFormatedText(state, FIELD_TO_PRODUCT_INFO)
 
 function getProductInfoString(state: FoodElement): string {
-  const keys = Object.keys(state)
+  const keys = Object.keys(state);
   const data = keys.map((key): [string, string | number] => {
-    return [FIELD_TO_PRODUCT_INFO[key], state[key as keyof FoodElement]]
-  })
+    return [FIELD_TO_PRODUCT_INFO[key], state[key as keyof FoodElement]];
+  });
   return getFormatedString(data);
 }
 

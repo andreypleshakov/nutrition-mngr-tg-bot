@@ -94,10 +94,17 @@ export const addProductToBase = new Scenes.WizardScene<Scenes.WizardContext>(
       return;
     }
 
-    console.log(ctx.wizard.state as DialogueState),
-      ((ctx.wizard.state as DialogueState).kcal = replaceCommaToDot(
-        ctx.message.text
-      ));
+    (ctx.wizard.state as DialogueState).kcal = replaceCommaToDot(
+      ctx.message.text
+    );
+
+    if ((ctx.wizard.state as DialogueState).fromFixingStep) {
+      await ctx.reply(
+        "Press YES if you want to fix something else or NO if you want to add product to database",
+        yesOrNoButton
+      );
+      return ctx.wizard.selectStep(IsFixingSomethingAndFinalStep);
+    }
 
     await ctx.reply("Proteins per 1 gram");
     return ctx.wizard.selectStep(proteinsPerGramStep);
@@ -118,6 +125,14 @@ export const addProductToBase = new Scenes.WizardScene<Scenes.WizardContext>(
       ctx.message.text
     );
 
+    if ((ctx.wizard.state as DialogueState).fromFixingStep) {
+      await ctx.reply(
+        "Press YES if you want to fix something else or NO if you want to add product to database",
+        yesOrNoButton
+      );
+      return ctx.wizard.selectStep(IsFixingSomethingAndFinalStep);
+    }
+
     await ctx.reply("Saturated fats per 1 gram");
     return ctx.wizard.selectStep(saturatedFatPerGramStep);
   },
@@ -136,6 +151,14 @@ export const addProductToBase = new Scenes.WizardScene<Scenes.WizardContext>(
     (ctx.wizard.state as DialogueState).saturated_fat = replaceCommaToDot(
       ctx.message.text
     );
+
+    if ((ctx.wizard.state as DialogueState).fromFixingStep) {
+      await ctx.reply(
+        "Press YES if you want to fix something else or NO if you want to add product to database",
+        yesOrNoButton
+      );
+      return ctx.wizard.selectStep(IsFixingSomethingAndFinalStep);
+    }
 
     await ctx.reply("Unsaturated fats per 1 gram");
     return ctx.wizard.selectStep(unsaturatedFatPerGramStep);
@@ -156,26 +179,41 @@ export const addProductToBase = new Scenes.WizardScene<Scenes.WizardContext>(
       ctx.message.text
     );
 
+    if ((ctx.wizard.state as DialogueState).fromFixingStep) {
+      await ctx.reply(
+        "Press YES if you want to fix something else or NO if you want to add product to database",
+        yesOrNoButton
+      );
+      return ctx.wizard.selectStep(IsFixingSomethingAndFinalStep);
+    }
+
     await ctx.reply("Carbohydrates per 1 gram");
     return ctx.wizard.selectStep(carbohydratesPerGramStep);
   },
 
   // waiting for the carbohydrates per gram
   async (ctx) => {
-    if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
-      if (!ctx.message || !("text" in ctx.message)) {
-        return;
-      }
-
-      if (!textIsNumber(ctx.message.text)) {
-        await ctx.reply("Wrong, write a number");
-        return;
-      }
-
-      (ctx.wizard.state as DialogueState).carbs = replaceCommaToDot(
-        ctx.message.text
-      );
+    if (!ctx.message || !("text" in ctx.message)) {
+      return;
     }
+
+    if (!textIsNumber(ctx.message.text)) {
+      await ctx.reply("Wrong, write a number");
+      return;
+    }
+
+    (ctx.wizard.state as DialogueState).carbs = replaceCommaToDot(
+      ctx.message.text
+    );
+
+    if ((ctx.wizard.state as DialogueState).fromFixingStep) {
+      await ctx.reply(
+        "Press YES if you want to fix something else or NO if you want to add product to database",
+        yesOrNoButton
+      );
+      return ctx.wizard.selectStep(IsFixingSomethingAndFinalStep);
+    }
+
     const actualState = ctx.wizard.state as DialogueState;
 
     console.log(actualState);
