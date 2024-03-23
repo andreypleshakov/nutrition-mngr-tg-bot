@@ -6,6 +6,7 @@ export interface DialogueState extends FoodElement {
 }
 
 export interface FoodElement {
+  rowId: number;
   name: string;
   mass: number;
   kcal: number;
@@ -31,7 +32,7 @@ export interface CombinedProduct {
   CombinedName: string;
   CombinedMass: number;
 
-  products: { [productName: string]: FoodElement };
+  products: Record<string, FoodElement>;
   actualProductName: string;
 
   existanceCombined: boolean;

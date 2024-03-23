@@ -37,27 +37,59 @@ export const yesOrNoButton = {
   },
 };
 
-export function getFixButtonProductBase(state: FoodElement) {
+export const fixButtonProductBase = {
+  reply_markup: {
+    inline_keyboard: [
+      [
+        { text: "Name", callback_data: "name" },
+        { text: "Calories", callback_data: "kcal" },
+        { text: "Proteins", callback_data: "protein" },
+        {
+          text: "Saturated fats",
+          callback_data: "saturated_fat",
+        },
+        {
+          text: "Unsaturated fats",
+          callback_data: "unsaturated_fat",
+        },
+        { text: "Carbohydrates", callback_data: "carbs" },
+      ],
+    ],
+  },
+};
+
+export function getFixButtonCombinedProduct(combinedProduct: CombinedProduct) {
+  const inlineKeyboard = Object.keys(combinedProduct.products).map(
+    (productName) => {
+      const product = combinedProduct.products[productName];
+      const productId = product.rowId;
+      return [
+        {
+          text: `${productName}: ${product.mass}`,
+          callback_data: `${productId}`,
+        },
+      ];
+    }
+  );
+
   return {
     reply_markup: {
-      inline_keyboard: [
-        [
-          { text: "Product Name", callback_data: "name" },
-          { text: "Calories", callback_data: "kcal" },
-          { text: "Proteins", callback_data: "protein" },
-          {
-            text: "Saturated fats",
-            callback_data: "saturated_fat",
-          },
-          {
-            text: "Unsaturated fats",
-            callback_data: "unsaturated_fat",
-          },
-          { text: "Carbohydrates", callback_data: "carbs" },
-        ],
-      ],
+      inline_keyboard: inlineKeyboard,
     },
   };
+}
+
+export function getProductNameAndMass(
+  combinedProduct: CombinedProduct
+) {
+  let productInfoArray: string[] = [];
+
+  Object.keys(combinedProduct.products).forEach((productName) => {
+    const product = combinedProduct.products[productName];
+    const productInfo = `${productName}: ${product.mass}`;
+    productInfoArray.push(productInfo);
+  });
+  return productInfoArray;
 }
 
 export async function calculateNutrition(
@@ -163,9 +195,13 @@ export async function getProductDetails(
   const sheetBase = doc.sheetsByTitle["products_database"];
   const baseRows = await sheetBase.getRows();
   const targetBaseRow = baseRows.find((row) => row.get("name") === productName);
+  const targetBaseCell = baseRows.findIndex(
+    (row) => row.get("name") === productName
+  );
   if (targetBaseRow) {
     const nutrition = {} as FoodElement;
-    (nutrition.kcal = targetBaseRow.get("kcal_per_1_gram")),
+    (nutrition.rowId = targetBaseCell),
+      (nutrition.kcal = targetBaseRow.get("kcal_per_1_gram")),
       (nutrition.protein = targetBaseRow.get("protein_per_1_gram")),
       (nutrition.saturated_fat = targetBaseRow.get("sat_fat_per_1_gram")),
       (nutrition.unsaturated_fat = targetBaseRow.get("unsat_fat_per_1_gram")),
@@ -202,7 +238,7 @@ export async function replaceProductData(product: FoodElement): Promise<void> {
   }
 }
 export async function addElementToSheet(
-  foodElement: FoodElement
+  foodElement: Omit<FoodElement, "rowId">
 ): Promise<void> {
   await doc.loadInfo();
   const sheet = doc.sheetsByTitle["products_database"];
@@ -284,7 +320,7 @@ export function textIsNumber(text: string): boolean {
 }
 
 export function combineNutrition(combinedProduct: CombinedProduct) {
-  let resultProduct: FoodElement = {
+  let resultProduct: Omit<FoodElement, "rowId"> = {
     name: combinedProduct.CombinedName,
     mass: combinedProduct.CombinedMass,
     kcal: 0,
@@ -297,7 +333,7 @@ export function combineNutrition(combinedProduct: CombinedProduct) {
   Object.keys(combinedProduct.products).forEach((productName) => {
     const product = combinedProduct.products[productName];
     console.log(
-      `Product: ${product.name}, 
+      `Product: ${productName}, 
         Mass: ${product.mass}, 
         Kcal: ${product.kcal}, 
         Protein: ${product.protein}, 
@@ -365,4 +401,8 @@ function getFormatedString(arrayOfData: [string, string | number][]) {
       return `${name}: ${value}`;
     })
     .join("\n");
+}
+
+function getCombinedNameAndMass(state: CombinedProduct) {
+  const keys = Object.keys(state);
 }
