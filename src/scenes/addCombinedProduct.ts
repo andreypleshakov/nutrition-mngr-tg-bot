@@ -8,11 +8,17 @@ import {
   addElementToSheet,
   isDoneButton,
   getProductDetails,
-  checkFormatOfProduct,
   combineNutrition,
   getProductNameAndMass,
   getFixButtonCombinedProduct,
   textIsNumber,
+  replaceCommaToDot,
+  getProductRowIdNameMass,
+  updateProductMassByName,
+  calculateCombinedMass,
+  replaceOrIgnoreButton,
+  doesProductExistInState,
+  getReplaceOrIgnoreButton,
 } from "../utils/utils";
 
 const addCombinedProductSteps: Middleware<Scenes.WizardContext>[] = [
@@ -20,9 +26,11 @@ const addCombinedProductSteps: Middleware<Scenes.WizardContext>[] = [
   waitingForProductName,
   isReplaceTheProduct,
   waitingForNameAndMassOfProduct,
-  isAddTheProduct,
+  createTheProduct,
   isFixingSomething,
   fixingAndFinal,
+  fixingMassOfProduct,
+  replaceOrIgnore,
 ];
 
 const startingDialogueStep = addCombinedProductSteps.findIndex(
@@ -41,8 +49,8 @@ const waitingForNameAndMassOfProductStep = addCombinedProductSteps.findIndex(
   (scene) => scene === waitingForNameAndMassOfProduct
 );
 
-const isAddTheProductStep = addCombinedProductSteps.findIndex(
-  (scene) => scene === isAddTheProduct
+const createTheProductStep = addCombinedProductSteps.findIndex(
+  (scene) => scene === createTheProduct
 );
 
 const isFixingSomethingStep = addCombinedProductSteps.findIndex(
@@ -51,6 +59,14 @@ const isFixingSomethingStep = addCombinedProductSteps.findIndex(
 
 const fixingAndFinalStep = addCombinedProductSteps.findIndex(
   (scene) => scene === fixingAndFinal
+);
+
+const fixingMassOfProductStep = addCombinedProductSteps.findIndex(
+  (scene) => scene === fixingMassOfProduct
+);
+
+const replaceOrIgnoreStep = addCombinedProductSteps.findIndex(
+  (scene) => scene === replaceOrIgnore
 );
 //////////////////////////////////////
 
@@ -122,7 +138,6 @@ async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
     await ctx.answerCbQuery(undefined);
     const productInfo = getProductNameAndMass(actualState);
     await ctx.reply(productInfo.join("\n"));
-    console.log(actualState);
     await ctx.reply("Do you want to fix something?", yesOrNoButton);
     return ctx.wizard.selectStep(isFixingSomethingStep);
   }
@@ -133,32 +148,68 @@ async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
 
   const inputProduct = ctx.message.text.trim();
 
-  const formatOfProduct = checkFormatOfProduct(inputProduct);
-  if (!formatOfProduct) {
+  // convert string of input to array of strings
+  const partsOfInput = inputProduct.split(" ");
+
+  // check length of array
+  if (partsOfInput.length < 2) {
     await ctx.reply(
       "Wrong, write a product name and mass (in gram) in this format: NAME MASS (example: apple 100, red apple 100, sweet red apple 100 etc.)"
     );
     return;
   }
 
-  const parts = inputProduct.split(" ");
-  const mass = parts.pop() as string;
-  const productMass = parseInt(mass);
-  const productName = parts.join(" ");
+  // convert string to number and replace comma by dot
+  const stringMass = partsOfInput.pop();
+  const correctedMass = stringMass!.replace(",", ".");
+  const productMass = parseFloat(correctedMass);
 
-  const product = await getProductDetails(productName);
-  if (product === null) {
-    await ctx.reply("Product does not exist in database");
-    await ctx.reply("Do you want to add it?", yesOrNoButton);
-    return ctx.wizard.selectStep(isAddTheProductStep);
+  // convert array of strings to string (product name)
+  const productName = partsOfInput.join(" ");
+
+  // check format of input
+  if (!productName || !productMass || isNaN(Number(productMass))) {
+    await ctx.reply(
+      "Wrong, write a product name and mass (in gram) in this format: NAME MASS (example: apple 100, red apple 100, sweet red apple 100 etc.)"
+    );
+    return;
   }
 
-  actualState.products[productName] = product;
-  actualState.products[productName].mass = productMass;
-  actualState.products[productName].rowId = product.rowId;
   actualState.actualProductName = productName;
+
+  const existanceOfProductInState = doesProductExistInState(
+    productName,
+    actualState
+  );
+
+  if (existanceOfProductInState) {
+    actualState.actualProductMass = productMass;
+    await ctx.reply("You can't have two identical products in state");
+    await ctx.reply(
+      "Do you want to replace old product by new or ignore it?",
+      replaceOrIgnoreButton
+    );
+    return ctx.wizard.selectStep(replaceOrIgnoreStep);
+  }
+
+  // check existance of product in product database
+  const product = await getProductDetails(productName);
+  if (product === null) {
+    await ctx.reply("Product does not exist in product database");
+    await ctx.reply(
+      "Do you want to create it and add to product database?",
+      yesOrNoButton
+    );
+    return ctx.wizard.selectStep(createTheProductStep);
+  }
+
+  const rowId = product.rowId;
+
+  actualState.products[rowId] = product;
+  actualState.products[rowId].name = productName;
+  actualState.products[rowId].mass = productMass;
+
   actualState.CombinedMass += productMass;
-  console.log(actualState);
 
   await ctx.reply(
     `Enter the name and mass (in gram) of the next product to combine in this format: NAME MASS press Done to calculate nutrition`,
@@ -167,8 +218,8 @@ async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(waitingForNameAndMassOfProductStep);
 }
 
-// waiting for "yes" or "no" answer of adding the product
-async function isAddTheProduct(ctx: Scenes.WizardContext) {
+// waiting for "yes" or "no" answer of creating the product and add it to product database
+async function createTheProduct(ctx: Scenes.WizardContext) {
   const succesButton = getYesOrNoButton(ctx);
   await ctx.answerCbQuery(undefined);
   if (succesButton) {
@@ -183,6 +234,32 @@ async function isAddTheProduct(ctx: Scenes.WizardContext) {
   );
   await ctx.reply("If you want to enter new product use command /add_product");
   return ctx.scene.leave();
+}
+
+// replace or ingore product in state
+async function replaceOrIgnore(ctx: Scenes.WizardContext) {
+  const actualState = ctx.wizard.state as CombinedProduct;
+  const productName = actualState.actualProductName;
+  const productMass = actualState.actualProductMass;
+
+  const replaceButton = getReplaceOrIgnoreButton(ctx);
+  if (replaceButton) {
+    updateProductMassByName(actualState, productName, productMass);
+    calculateCombinedMass(actualState);
+
+    await ctx.reply("Product data is updated in current state");
+    await ctx.reply(
+      `Enter the name and mass (in gram) of the next product to combine in this format: NAME MASS press Done to calculate nutrition`,
+      doneButton
+    );
+    return ctx.wizard.selectStep(waitingForNameAndMassOfProductStep);
+  }
+
+  await ctx.reply(
+    `Enter the name and mass (in gram) of the next product to combine in this format: NAME MASS press Done to calculate nutrition`,
+    doneButton
+  );
+  return ctx.wizard.selectStep(waitingForNameAndMassOfProductStep);
 }
 
 // waiting for "yes" or "no" answer of fixing something or finish the dialogue
@@ -214,21 +291,13 @@ async function fixingAndFinal(ctx: Scenes.WizardContext) {
   }
 
   const actualState = ctx.wizard.state as CombinedProduct;
+  const rowIdFromCallBack = ctx.callbackQuery.data;
+  const productName = getProductRowIdNameMass(actualState, rowIdFromCallBack);
 
-  console.log("----------------");
-  const arrayOfId = Object.values(actualState.products).map(
-    (productName) => productName.rowId
-  );
+  actualState.actualProductName = productName;
 
-  actualState.products;
-
-  const productId = ctx.callbackQuery.data;
-  const product = actualState.products[productId];
-
-  //   if (callBackData == `${productId}`) {
-  //     actualState.actualProductName = `${productName}`;
-  //     await ctx.reply(`Write a mass of product ${productName}`);
-  //   }
+  await ctx.reply("Write a mass of product");
+  return ctx.wizard.selectStep(fixingMassOfProductStep);
 }
 
 //fixing mass of product
@@ -238,9 +307,18 @@ async function fixingMassOfProduct(ctx: Scenes.WizardContext) {
   }
 
   const actualState = ctx.wizard.state as CombinedProduct;
+  const productName = actualState.actualProductName;
 
   if (!textIsNumber(ctx.message.text)) {
     await ctx.reply("Wrong, write a number");
     return;
   }
+
+  const mass = replaceCommaToDot(ctx.message.text);
+
+  updateProductMassByName(actualState, productName, mass);
+
+  await ctx.reply("Product succsesfully updated");
+  await ctx.reply("Do you want to fix something else?", yesOrNoButton);
+  return ctx.wizard.selectStep(isFixingSomethingStep);
 }

@@ -58,19 +58,46 @@ export const fixButtonProductBase = {
   },
 };
 
-export function getFixButtonCombinedProduct(combinedProduct: CombinedProduct) {
-  const inlineKeyboard = Object.keys(combinedProduct.products).map(
-    (productName) => {
-      const product = combinedProduct.products[productName];
-      const productId = product.rowId;
-      return [
-        {
-          text: `${productName}: ${product.mass}`,
-          callback_data: `${productId}`,
-        },
-      ];
-    }
+export const replaceOrIgnoreButton = {
+  reply_markup: {
+    inline_keyboard: [
+      [
+        { text: "Replace", callback_data: "replace" },
+        { text: "Ignore", callback_data: "ignore" },
+      ],
+    ],
+  },
+};
+
+export function getReplaceOrIgnoreButton(ctx: any): boolean {
+  if (
+    ctx.callbackQuery !== undefined &&
+    (ctx.callbackQuery as any).data === "replace"
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function calculateCombinedMass(combinedProduct: CombinedProduct) {
+  const newMass = Object.values(combinedProduct.products).reduce(
+    (accumulator, product) => accumulator + product.mass,
+    0
   );
+  combinedProduct.CombinedMass = 0 + newMass;
+  return combinedProduct.CombinedMass;
+}
+
+export function getFixButtonCombinedProduct(combinedProduct: CombinedProduct) {
+  const inlineKeyboard = Object.keys(combinedProduct.products).map((rowId) => {
+    const product = combinedProduct.products[rowId];
+    return [
+      {
+        text: `${product.name}: ${product.mass}`,
+        callback_data: `${product.rowId}`,
+      },
+    ];
+  });
 
   return {
     reply_markup: {
@@ -79,14 +106,26 @@ export function getFixButtonCombinedProduct(combinedProduct: CombinedProduct) {
   };
 }
 
-export function getProductNameAndMass(
+export function doesProductExistInState(
+  productName: string,
   combinedProduct: CombinedProduct
-) {
+): boolean {
+  const existingProductName = Object.values(combinedProduct.products).find(
+    (product) => product.name === productName
+  );
+
+  if (existingProductName) {
+    return true;
+  }
+  return false;
+}
+
+export function getProductNameAndMass(combinedProduct: CombinedProduct) {
   let productInfoArray: string[] = [];
 
-  Object.keys(combinedProduct.products).forEach((productName) => {
-    const product = combinedProduct.products[productName];
-    const productInfo = `${productName}: ${product.mass}`;
+  Object.keys(combinedProduct.products).forEach((rowId) => {
+    const product = combinedProduct.products[rowId];
+    const productInfo = `${product.name}: ${product.mass}`;
     productInfoArray.push(productInfo);
   });
   return productInfoArray;
@@ -333,12 +372,12 @@ export function combineNutrition(combinedProduct: CombinedProduct) {
   Object.keys(combinedProduct.products).forEach((productName) => {
     const product = combinedProduct.products[productName];
     console.log(
-      `Product: ${productName}, 
-        Mass: ${product.mass}, 
-        Kcal: ${product.kcal}, 
-        Protein: ${product.protein}, 
-        Saturated fat: ${product.saturated_fat}, 
-        Unsaturated fat: ${product.unsaturated_fat}, 
+      `Product: ${productName},
+        Mass: ${product.mass},
+        Kcal: ${product.kcal},
+        Protein: ${product.protein},
+        Saturated fat: ${product.saturated_fat},
+        Unsaturated fat: ${product.unsaturated_fat},
         Carbs: ${product.carbs}`
     );
 
@@ -359,6 +398,16 @@ export function combineNutrition(combinedProduct: CombinedProduct) {
   return resultProduct;
 }
 
+export function newCheckFormatOfProduct(
+  productName: string,
+  productMass: number
+): boolean {
+  if (!productName || !productMass || isNaN(Number(productMass))) {
+    return false;
+  }
+  return true;
+}
+
 export function checkFormatOfProduct(userInput: string): boolean {
   const parts = userInput.trim().split(" ");
   const mass = parts.pop();
@@ -372,6 +421,46 @@ export function checkFormatOfProduct(userInput: string): boolean {
 
 export function replaceCommaToDot(input: string): number {
   return parseFloat(input.replace(",", "."));
+}
+
+export function getIdNameAndMass(
+  combinedProduct: CombinedProduct
+): Array<{ rowId: string; name: string; mass: number }> {
+  return Object.keys(combinedProduct.products).map((rowId) => {
+    const product = combinedProduct.products[rowId];
+    return {
+      rowId: rowId,
+      name: product.name,
+      mass: product.mass,
+    };
+  });
+}
+
+// function: compare callBackData and rowId from combinedProduct and return rowId, name and mass of product
+export function getProductRowIdNameMass(
+  combinedProduct: CombinedProduct,
+  callBackData: string
+): string {
+  const numberCallBackData = parseInt(callBackData);
+  const product = Object.values(combinedProduct.products).find(
+    (product) => product.rowId === numberCallBackData
+  );
+
+  return product!.name;
+}
+
+export function updateProductMassByName(
+  combinedProduct: CombinedProduct,
+  productName: string,
+  mass: number
+) {
+  Object.keys(combinedProduct.products).forEach((rowId) => {
+    const product = combinedProduct.products[rowId];
+    if (product.name === productName) {
+      product.mass = mass;
+      product.name = productName;
+    }
+  });
 }
 
 ///////////////////////

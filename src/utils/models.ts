@@ -34,6 +34,7 @@ export interface CombinedProduct {
 
   products: Record<string, FoodElement>;
   actualProductName: string;
+  actualProductMass: number;
 
   existanceCombined: boolean;
 }
