@@ -1,4 +1,4 @@
-import { FoodElement, CombinedProduct } from "./models";
+import { FoodElement, CombinedProduct, DailyFood } from "./models";
 import { JWT } from "google-auth-library";
 import { GoogleSpreadsheet } from "google-spreadsheet";
 
@@ -26,7 +26,7 @@ export const nextStep = {
   },
 };
 
-export const yesAndNoButton = {
+export const yesOrNoButton = {
   reply_markup: {
     inline_keyboard: [
       [
@@ -37,25 +37,121 @@ export const yesAndNoButton = {
   },
 };
 
+export const fixButtonProductBase = {
+  reply_markup: {
+    inline_keyboard: [
+      [
+        { text: "Name", callback_data: "name" },
+        { text: "Calories", callback_data: "kcal" },
+        { text: "Proteins", callback_data: "protein" },
+        {
+          text: "Saturated fats",
+          callback_data: "saturated_fat",
+        },
+        {
+          text: "Unsaturated fats",
+          callback_data: "unsaturated_fat",
+        },
+        { text: "Carbohydrates", callback_data: "carbs" },
+      ],
+    ],
+  },
+};
+
+export const replaceOrIgnoreButton = {
+  reply_markup: {
+    inline_keyboard: [
+      [
+        { text: "Replace", callback_data: "replace" },
+        { text: "Ignore", callback_data: "ignore" },
+      ],
+    ],
+  },
+};
+
+export function getReplaceOrIgnoreButton(ctx: any): boolean {
+  if (
+    ctx.callbackQuery !== undefined &&
+    (ctx.callbackQuery as any).data === "replace"
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function calculateCombinedMass(combinedProduct: CombinedProduct) {
+  const newMass = Object.values(combinedProduct.products).reduce(
+    (accumulator, product) => accumulator + product.mass,
+    0
+  );
+  combinedProduct.CombinedMass = 0 + newMass;
+  return combinedProduct.CombinedMass;
+}
+
+export function getFixButtonCombinedProduct(combinedProduct: CombinedProduct) {
+  const inlineKeyboard = Object.keys(combinedProduct.products).map((rowId) => {
+    const product = combinedProduct.products[rowId];
+    return [
+      {
+        text: `${product.name}: ${product.mass}`,
+        callback_data: `${product.rowId}`,
+      },
+    ];
+  });
+
+  return {
+    reply_markup: {
+      inline_keyboard: inlineKeyboard,
+    },
+  };
+}
+
+export function doesProductExistInState(
+  productName: string,
+  combinedProduct: CombinedProduct
+): boolean {
+  const existingProductName = Object.values(combinedProduct.products).find(
+    (product) => product.name === productName
+  );
+
+  if (existingProductName) {
+    return true;
+  }
+  return false;
+}
+
+export function getProductNameAndMass(combinedProduct: CombinedProduct) {
+  let productInfoArray: string[] = [];
+
+  Object.keys(combinedProduct.products).forEach((rowId) => {
+    const product = combinedProduct.products[rowId];
+    const productInfo = `${product.name}: ${product.mass}`;
+    productInfoArray.push(productInfo);
+  });
+  return productInfoArray;
+}
+
 export async function calculateNutrition(
   productName: string,
   mass: number
-): Promise<FoodElement | null> {
+): Promise<DailyFood | null> {
   await doc.loadInfo();
   const sheetBase = doc.sheetsByTitle["products_database"];
   const baseRows = await sheetBase.getRows();
   const targetBaseRow = baseRows.find((row) => row.get("name") === productName);
 
   if (targetBaseRow) {
-    const kcal = targetBaseRow.get("kcal_per_1_gram") * mass;
+    const kcal = parseInt(targetBaseRow.get("kcal_per_1_gram")) * mass;
     const protein = targetBaseRow.get("protein_per_1_gram") * mass;
     const saturated_fat = targetBaseRow.get("sat_fat_per_1_gram") * mass;
     const unsaturated_fat = targetBaseRow.get("unsat_fat_per_1_gram") * mass;
     const carbs = targetBaseRow.get("carbs_per_1_gram") * mass;
+    const totalFat = saturated_fat + unsaturated_fat;
 
-    const nutrition = {} as FoodElement;
+    const nutrition = {} as DailyFood;
     (nutrition.kcal = kcal),
       (nutrition.protein = protein),
+      (nutrition.totalFat = totalFat),
       (nutrition.saturated_fat = saturated_fat),
       (nutrition.unsaturated_fat = unsaturated_fat),
       (nutrition.carbs = carbs);
@@ -65,8 +161,9 @@ export async function calculateNutrition(
 
   return null;
 }
+
 export async function addCalculatedNutrition(
-  nutrition: FoodElement,
+  nutrition: DailyFood,
   date: string
 ): Promise<void> {
   const sheetDaily = doc.sheetsByTitle["daily_statistics"];
@@ -76,26 +173,31 @@ export async function addCalculatedNutrition(
   if (targetDailyRow) {
     const existingKcal = targetDailyRow.get("kcal");
     const existingProtein = targetDailyRow.get("protein (g)");
-    const existingSaturated_fat = targetDailyRow.get("saturated_fat (g)");
-    const existingUnsaturated_fat = targetDailyRow.get("unsaturated_fat (g)");
-    const existingCarbs = targetDailyRow.get("carbohydrates (g)"); // Corrected variable name
+    const existingTotal_fat = targetDailyRow.get("total_fat (g)");
+    const existingCarbs = targetDailyRow.get("carbohydrates (g)");
 
     nutrition.kcal += existingKcal;
     nutrition.protein += existingProtein;
-    nutrition.saturated_fat += existingSaturated_fat;
-    nutrition.unsaturated_fat += existingUnsaturated_fat;
+    nutrition.totalFat += existingTotal_fat;
     nutrition.carbs += existingCarbs;
 
     await targetDailyRow.delete();
   }
+  const sumNutrition = nutrition.protein + nutrition.totalFat + nutrition.carbs;
 
   const DailyFoodElement = await sheetDaily.addRow([
     date,
     nutrition.kcal,
     nutrition.protein,
-    nutrition.saturated_fat,
-    nutrition.unsaturated_fat,
+    nutrition.totalFat,
     nutrition.carbs,
+    (nutrition.proteinPercent = (nutrition.protein / sumNutrition) * 100),
+    (nutrition.totalFatPercent = (nutrition.totalFat / sumNutrition) * 100),
+    (nutrition.carbPercent = (nutrition.carbs / sumNutrition) * 100),
+    (nutrition.satFatPercent =
+      (nutrition.saturated_fat / nutrition.totalFat) * 100),
+    (nutrition.unsatFatPercent =
+      (nutrition.unsaturated_fat / nutrition.totalFat) * 100),
   ]);
 
   await DailyFoodElement.save();
@@ -132,9 +234,13 @@ export async function getProductDetails(
   const sheetBase = doc.sheetsByTitle["products_database"];
   const baseRows = await sheetBase.getRows();
   const targetBaseRow = baseRows.find((row) => row.get("name") === productName);
+  const targetBaseCell = baseRows.findIndex(
+    (row) => row.get("name") === productName
+  );
   if (targetBaseRow) {
     const nutrition = {} as FoodElement;
-    (nutrition.kcal = targetBaseRow.get("kcal_per_1_gram")),
+    (nutrition.rowId = targetBaseCell),
+      (nutrition.kcal = targetBaseRow.get("kcal_per_1_gram")),
       (nutrition.protein = targetBaseRow.get("protein_per_1_gram")),
       (nutrition.saturated_fat = targetBaseRow.get("sat_fat_per_1_gram")),
       (nutrition.unsaturated_fat = targetBaseRow.get("unsat_fat_per_1_gram")),
@@ -144,7 +250,7 @@ export async function getProductDetails(
   return null;
 }
 
-export async function replaceProductData(product: FoodElement) {
+export async function replaceProductData(product: FoodElement): Promise<void> {
   await doc.loadInfo();
   const sheet = doc.sheetsByTitle["products_database"];
 
@@ -167,12 +273,12 @@ export async function replaceProductData(product: FoodElement) {
       });
 
       await row.save();
-      return true; // Product updated
     }
   }
-  return false; // Product not found
 }
-export async function addElementToSheet(foodElement: FoodElement) {
+export async function addElementToSheet(
+  foodElement: Omit<FoodElement, "rowId">
+): Promise<void> {
   await doc.loadInfo();
   const sheet = doc.sheetsByTitle["products_database"];
 
@@ -189,6 +295,32 @@ export async function addElementToSheet(foodElement: FoodElement) {
   await addFoodElemnt.save();
 }
 
+export async function getDailyStatistic(
+  date: string
+): Promise<DailyFood | null> {
+  await doc.loadInfo();
+  const sheet = doc.sheetsByTitle["daily_statistics"];
+  const rows = await sheet.getRows();
+  const row = rows.find((row) => row.get("date") === date);
+
+  if (row) {
+    const dailyStat = {} as DailyFood;
+    (dailyStat.dateOfDaily = row.get("date")),
+      (dailyStat.kcal = row.get("kcal")),
+      (dailyStat.protein = row.get("protein (g)")),
+      (dailyStat.totalFat = row.get("total_fat (g)")),
+      (dailyStat.carbs = row.get("carbohydrates (g)")),
+      (dailyStat.proteinPercent = row.get("protein (%)")),
+      (dailyStat.totalFatPercent = row.get("fat (%)")),
+      (dailyStat.carbPercent = row.get("carbohydrates (%)")),
+      (dailyStat.satFatPercent = row.get("saturated_fat (%)")),
+      (dailyStat.unsatFatPercent = row.get("unsaturated_fat (%)"));
+    return dailyStat;
+  }
+
+  return null;
+}
+
 export function isValidDateFormat(date: string): boolean {
   const datePattern = /^\d{2}.\d{2}.\d{4}$/;
 
@@ -198,7 +330,7 @@ export function isValidDateFormat(date: string): boolean {
   return true;
 }
 
-export function yesOrNoButton(ctx: any): boolean {
+export function getYesOrNoButton(ctx: any): boolean {
   if (
     ctx.callbackQuery !== undefined &&
     (ctx.callbackQuery as any).data === "bot-yes"
@@ -227,7 +359,7 @@ export function textIsNumber(text: string): boolean {
 }
 
 export function combineNutrition(combinedProduct: CombinedProduct) {
-  let resultProduct: FoodElement = {
+  let resultProduct: Omit<FoodElement, "rowId"> = {
     name: combinedProduct.CombinedName,
     mass: combinedProduct.CombinedMass,
     kcal: 0,
@@ -240,12 +372,12 @@ export function combineNutrition(combinedProduct: CombinedProduct) {
   Object.keys(combinedProduct.products).forEach((productName) => {
     const product = combinedProduct.products[productName];
     console.log(
-      `Product: ${product.name}, 
-        Mass: ${product.mass}, 
-        Kcal: ${product.kcal}, 
-        Protein: ${product.protein}, 
-        Saturated fat: ${product.saturated_fat}, 
-        Unsaturated fat: ${product.unsaturated_fat}, 
+      `Product: ${productName},
+        Mass: ${product.mass},
+        Kcal: ${product.kcal},
+        Protein: ${product.protein},
+        Saturated fat: ${product.saturated_fat},
+        Unsaturated fat: ${product.unsaturated_fat},
         Carbs: ${product.carbs}`
     );
 
@@ -266,6 +398,16 @@ export function combineNutrition(combinedProduct: CombinedProduct) {
   return resultProduct;
 }
 
+export function newCheckFormatOfProduct(
+  productName: string,
+  productMass: number
+): boolean {
+  if (!productName || !productMass || isNaN(Number(productMass))) {
+    return false;
+  }
+  return true;
+}
+
 export function checkFormatOfProduct(userInput: string): boolean {
   const parts = userInput.trim().split(" ");
   const mass = parts.pop();
@@ -275,4 +417,81 @@ export function checkFormatOfProduct(userInput: string): boolean {
   }
 
   return true;
+}
+
+export function replaceCommaToDot(input: string): number {
+  return parseFloat(input.replace(",", "."));
+}
+
+export function getIdNameAndMass(
+  combinedProduct: CombinedProduct
+): Array<{ rowId: string; name: string; mass: number }> {
+  return Object.keys(combinedProduct.products).map((rowId) => {
+    const product = combinedProduct.products[rowId];
+    return {
+      rowId: rowId,
+      name: product.name,
+      mass: product.mass,
+    };
+  });
+}
+
+// function: compare callBackData and rowId from combinedProduct and return rowId, name and mass of product
+export function getProductRowIdNameMass(
+  combinedProduct: CombinedProduct,
+  callBackData: string
+): string {
+  const numberCallBackData = parseInt(callBackData);
+  const product = Object.values(combinedProduct.products).find(
+    (product) => product.rowId === numberCallBackData
+  );
+
+  return product!.name;
+}
+
+export function updateProductMassByName(
+  combinedProduct: CombinedProduct,
+  productName: string,
+  mass: number
+) {
+  Object.keys(combinedProduct.products).forEach((rowId) => {
+    const product = combinedProduct.products[rowId];
+    if (product.name === productName) {
+      product.mass = mass;
+      product.name = productName;
+    }
+  });
+}
+
+///////////////////////
+//: Record<Exclude<keyof FoodElement, 'mass'>, string>
+const FIELD_TO_PRODUCT_INFO: Record<string, string> = {
+  name: "Product name",
+  kcal: "Calories",
+  protein: "Proteins",
+  saturated_fat: "Saturated fats",
+  unsaturated_fat: "Unsaturated fats",
+  carbs: "Carbohydrates",
+};
+
+// getFormatedText(state, FIELD_TO_PRODUCT_INFO)
+
+function getProductInfoString(state: FoodElement): string {
+  const keys = Object.keys(state);
+  const data = keys.map((key): [string, string | number] => {
+    return [FIELD_TO_PRODUCT_INFO[key], state[key as keyof FoodElement]];
+  });
+  return getFormatedString(data);
+}
+
+function getFormatedString(arrayOfData: [string, string | number][]) {
+  return arrayOfData
+    .map(([name, value]) => {
+      return `${name}: ${value}`;
+    })
+    .join("\n");
+}
+
+function getCombinedNameAndMass(state: CombinedProduct) {
+  const keys = Object.keys(state);
 }
