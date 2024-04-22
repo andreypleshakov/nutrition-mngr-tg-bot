@@ -1,0 +1,57 @@
+import { Scenes } from "telegraf";
+import mongoose from "mongoose";
+import { userSchema, DialogueState } from "../utils/models";
+import { existanceOfUser, sceneButtons } from "../utils/utils";
+
+export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
+  "START_CALCULATION",
+
+  //start dialogue: create new user or check existance
+  async (ctx) => {
+    const userId = ctx.from!.id;
+    const userName = ctx.from!.username!;
+
+    const userBase = mongoose.model("userBase", userSchema);
+
+    const existance = await existanceOfUser(userId, userName);
+
+    if (!existance) {
+      const newUser = new userBase({ tgId: userId, tgUserName: userName });
+      newUser.save();
+    }
+
+    await ctx.reply("Select scene that you want to enter", sceneButtons);
+    return ctx.wizard.next();
+  },
+
+  // select scene
+  async (ctx) => {
+    if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
+      return;
+    }
+
+    const fromStartingScene = { fromStartingScene: true } as DialogueState;
+
+    const callBackData = ctx.callbackQuery.data;
+
+    await ctx.answerCbQuery();
+
+    switch (callBackData) {
+      case "create-product":
+        return ctx.scene.enter("CREATE_PRODUCT", fromStartingScene);
+      case "create-combined-product":
+        return ctx.scene.enter("CREATE_COMBINED_PRODUCT", fromStartingScene);
+      case "add-todays-consumption":
+        return ctx.scene.enter("ADD_CONSUMPTION", fromStartingScene);
+      case "check-consumption-statistic":
+        return ctx.scene.enter(
+          "CHECK_CONSUMPTION_STATISTIC",
+          fromStartingScene
+        );
+        case "cost-of-protein":
+          return ctx.scene.enter("COST_OF_PROTEIN")
+      case "leave":
+        return ctx.scene.leave();
+    }
+  }
+);

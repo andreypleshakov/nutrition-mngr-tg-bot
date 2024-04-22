@@ -2,10 +2,29 @@ import { Telegraf, Scenes, session } from "telegraf";
 import { message } from "telegraf/filters";
 import "dotenv/config";
 import assert from "assert-ts";
-import { addTodayFoodToBase } from "./scenes/addTodayFoodToBase";
-import { addProductToBase } from "./scenes/addProductToBase";
-import { addCombinedProduct } from "./scenes/addCombinedProduct";
-import { checkTodayConsumption } from "./scenes/checkTodayConsumption";
+import { addConsumption } from "./scenes/addConsumption";
+import { createProduct } from "./scenes/createProduct";
+import { createCombinedProduct } from "./scenes/createCombinedProduct";
+import { checkConsumptionStatistic } from "./scenes/checkConsumptionStatistic";
+import { startCalculation } from "./scenes/startCalculation";
+import { costOfOneProteinsGram } from "./scenes/costOfOneProteinsGram";
+import mongoose from "mongoose";
+
+const userName = process.env.MONGODB_USER_NAME;
+const rawPassword =
+  process.env.MONGODB_ADMIN_PASSWORD !== undefined
+    ? process.env.MONGODB_ADMIN_PASSWORD
+    : "";
+const encoderedPassword = encodeURIComponent(rawPassword);
+
+mongoose
+  .connect(
+    `mongodb+srv://${userName}:${encoderedPassword}@cluster0.6tfa4iv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
+  )
+  .then(() => console.log("Connected!"))
+  .catch((error) => {
+    console.log(error);
+  });
 
 const tgToken = process.env.TG_BOT_TOKEN;
 assert(tgToken != null, "No TG_BOT_TOKEN environment variable found");
@@ -19,33 +38,27 @@ assert(
 const bot = new Telegraf<Scenes.WizardContext>(tgToken!);
 
 const stage = new Scenes.Stage<Scenes.WizardContext>([
-  addProductToBase,
-  addTodayFoodToBase,
-  addCombinedProduct,
-  checkTodayConsumption,
+  startCalculation,
+  createProduct,
+  addConsumption,
+  createCombinedProduct,
+  checkConsumptionStatistic,
+  costOfOneProteinsGram,
 ]);
 
 bot.use(session());
 bot.use(stage.middleware());
 
-bot.command("add_daily_product", (ctx) => {
-  ctx.scene.enter("ADD_TODAY_FOOD_TO_BASE");
-});
-
-bot.command("add_product", (ctx) => {
-  ctx.scene.enter("ADD_PRODUCT_TO_BASE");
-});
-
-bot.command("add_combined_product", (ctx) => {
-  ctx.scene.enter("ADD_COMBINED_PRODUCT");
-});
-
-bot.command("check_today_consumption", (ctx) => {
-  ctx.scene.enter("CHECK_TODAY_CONSUMPTION");
+bot.command("start_calculation", (ctx) => {
+  ctx.scene.enter("START_CALCULATION");
 });
 
 bot.start((ctx) => ctx.reply("Welcome"));
-bot.help((ctx) => ctx.reply("Send me a sticker"));
+bot.help((ctx) =>
+  ctx.reply(
+    "Press /start_calculation to start use this bot OR /leave_scene to stop using this bot "
+  )
+);
 bot.on(message("sticker"), (ctx) => ctx.reply("👍"));
 bot.hears("hi", (ctx) => ctx.reply("Hey bro"));
 
