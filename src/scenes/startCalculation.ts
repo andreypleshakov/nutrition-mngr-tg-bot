@@ -1,6 +1,6 @@
 import { Scenes } from "telegraf";
-import mongoose from "mongoose";
-import { userSchema, DialogueState } from "../utils/models";
+import { DialogueState } from "../utils/models";
+import { userBase } from "../utils/schemas";
 import { existanceOfUser, sceneButtons } from "../utils/utils";
 
 export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
@@ -10,8 +10,6 @@ export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
   async (ctx) => {
     const userId = ctx.from!.id;
     const userName = ctx.from!.username!;
-
-    const userBase = mongoose.model("userBase", userSchema);
 
     const existance = await existanceOfUser(userId, userName);
 
@@ -41,15 +39,15 @@ export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
         return ctx.scene.enter("CREATE_PRODUCT", fromStartingScene);
       case "create-combined-product":
         return ctx.scene.enter("CREATE_COMBINED_PRODUCT", fromStartingScene);
-      case "add-todays-consumption":
+      case "add-consumption":
         return ctx.scene.enter("ADD_CONSUMPTION", fromStartingScene);
       case "check-consumption-statistic":
         return ctx.scene.enter(
           "CHECK_CONSUMPTION_STATISTIC",
           fromStartingScene
         );
-        case "cost-of-protein":
-          return ctx.scene.enter("COST_OF_PROTEIN")
+      case "cost-of-protein":
+        return ctx.scene.enter("COST_OF_PROTEIN");
       case "leave":
         return ctx.scene.leave();
     }

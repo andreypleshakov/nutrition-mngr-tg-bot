@@ -1,11 +1,12 @@
 import { Middleware, Scenes } from "telegraf";
-import { DailyFood, FoodElement, productBase } from "../utils/models";
+import { DailyFood, FoodElement } from "../utils/models";
 import {
   handleFromStartingScene,
   calculateDailyConsumption,
   todayOrCustomDateButton,
   isValidDateFormat,
   findAndcalculateDailyConsumption,
+  getChooseProductButton,
 } from "../utils/utils";
 
 const addConsumptionSteps: Middleware<Scenes.WizardContext>[] = [
@@ -143,7 +144,41 @@ async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
 
   actualState.mass = productMass;
 
-  await findAndcalculateDailyConsumption(productName, ctx, actualState);
+  const searchResults = await findAndcalculateDailyConsumption(productName);
+
+  if (searchResults.length === 0) {
+    await ctx.reply(
+      "No matching products found. Please check the name and try again."
+    );
+    return;
+  }
+
+  if (searchResults.length === 1) {
+    const product = Object.values(searchResults).find(
+      (product) => product.name === productName
+    );
+    const foodElement: FoodElement = {
+      name: product.name,
+      mass: actualState.mass,
+
+      kcal: product.kcal,
+      protein: product.protein,
+      saturated_fat: product.saturated_fat,
+      unsaturated_fat: product.unsaturated_fat,
+      totalFat: product.totalFat,
+      carbs: product.carbs,
+
+      tgId: product.tgId,
+    };
+
+    await calculateDailyConsumption(foodElement, actualState, ctx);
+    return;
+  }
+
+  actualState.arrayOfProducts = searchResults;
+
+  const chooseProductButton = getChooseProductButton(searchResults);
+  await ctx.reply("Did you mean one of these products?", chooseProductButton);
 
   return ctx.wizard.selectStep(productOptionsStep);
 }
@@ -163,5 +198,4 @@ async function productOptions(ctx: Scenes.WizardContext) {
   );
 
   await calculateDailyConsumption(product!, actualState, ctx);
-  return;
 }

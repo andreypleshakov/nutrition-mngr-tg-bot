@@ -1,6 +1,4 @@
-import { Schema, model } from "mongoose";
-
-interface users {
+export interface users {
   tgId: number;
   tgUserName?: string;
 }
@@ -45,7 +43,7 @@ export interface CostOfProtein {
 export interface DailyFood extends FoodElement {
   dateOfConsumption: Date;
 
-  arrayOfProducts: FoodElement[];
+  arrayOfProducts: any[];
   objectProduct: {};
 }
 
@@ -57,38 +55,3 @@ export interface CombinedProduct extends DialogueState {
   actualProductName: string;
   actualProductMass: number;
 }
-
-export const userSchema = new Schema<users>({
-  tgId: { type: Number, required: true, unique: true },
-  tgUserName: { type: String, required: true },
-});
-
-export const dailyFoodSchema = new Schema<DailyFood>({
-  dateOfConsumption: { type: Date, required: true },
-  name: { type: String, required: true },
-  mass: { type: Number, required: true },
-  kcal: { type: Number, required: true },
-  protein: { type: Number, required: true },
-  saturated_fat: { type: Number, required: true },
-  unsaturated_fat: { type: Number, required: true },
-  totalFat: { type: Number, required: true },
-  carbs: { type: Number, required: true },
-  tgId: { type: Number, required: true },
-});
-
-const productBaseSchema = new Schema<FoodElement>({
-  name: { type: String, required: true },
-  kcal: { type: Number, required: true },
-  protein: { type: Number, required: true },
-  totalFat: { type: Number, required: true },
-  saturated_fat: { type: Number, required: true },
-  unsaturated_fat: { type: Number, required: true },
-  carbs: { type: Number, required: true },
-  tgId: { type: Number, required: true },
-});
-
-export const userBase = model<users>("userBase", userSchema);
-
-export const dailyFoodBase = model<DailyFood>("dailyFoodBase", dailyFoodSchema);
-
-export const productBase = model<FoodElement>("productBase", productBaseSchema);

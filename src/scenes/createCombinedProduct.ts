@@ -112,6 +112,10 @@ async function waitingForCombinedProductName(ctx: Scenes.WizardContext) {
   );
 
   if (existance) {
+    actualState.CombinedName = combinedProductName;
+    actualState.CombinedMass = 0;
+    actualState.products = {};
+
     await ctx.reply("Product already exists in database");
     await ctx.reply("Do you want to replace it?", yesOrNoButton);
     return ctx.wizard.selectStep(isReplaceTheProductStep);
@@ -176,7 +180,7 @@ async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
 
   const inputProduct = ctx.message.text;
 
-  const productNameAndMass =  IsInputStringAndNumber(inputProduct);
+  const productNameAndMass = IsInputStringAndNumber(inputProduct);
   if (productNameAndMass === null) {
     await ctx.reply(
       "Wrong, write a product name and mass (in gram) in this format: NAME MASS (example: apple 100, red apple 100, sweet red apple 100 etc.)"
@@ -290,6 +294,8 @@ async function isFixingSomethingOrFinish(ctx: Scenes.WizardContext) {
   const actualState = ctx.wizard.state as CombinedProduct;
   const succesButton = getYesOrNoButton(ctx);
 
+  await ctx.answerCbQuery();
+
   if (succesButton) {
     const fixButtonCombinedProduct = getFixButtonCombinedProduct(actualState);
     await ctx.reply("Choose what you want ot fix", fixButtonCombinedProduct);
@@ -301,11 +307,6 @@ async function isFixingSomethingOrFinish(ctx: Scenes.WizardContext) {
   const updateCheck = (ctx.scene.state as DialogueState).updateProduct;
 
   await createOrUpdateProductInProductBase(finalNutrition, updateCheck, ctx);
-
-  await ctx.reply(
-    `Product ${actualState.CombinedName} created and added to database`
-  );
-  return ctx.scene.enter("START_CALCULATION");
 }
 
 // fixing something and then finish the dialogue
@@ -317,6 +318,8 @@ async function fixingAndFinal(ctx: Scenes.WizardContext) {
   ) {
     return;
   }
+
+  await ctx.answerCbQuery();
 
   const actualState = ctx.wizard.state as CombinedProduct;
   const documentIdFromCallBack = ctx.callbackQuery.data;

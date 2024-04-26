@@ -2,12 +2,10 @@ import {
   FoodElement,
   CombinedProduct,
   DailyFood,
-  userBase,
-  dailyFoodBase,
   DialogueState,
-  productBase,
   CostOfProtein,
 } from "./models";
+import { userBase, dailyFoodBase, productBase } from "../utils/schemas";
 import { Scenes } from "telegraf";
 import { IsFixingSomethingAndFinalStep } from "../scenes/createProduct";
 
@@ -75,8 +73,8 @@ export const sceneButtons = {
 
       [
         {
-          text: "Add today's consumption",
-          callback_data: "add-todays-consumption",
+          text: "Add consumption",
+          callback_data: "add-consumption",
         },
       ],
 
@@ -636,10 +634,10 @@ export async function createProductInBase(
   await newProduct.save();
 }
 export async function findAndcalculateDailyConsumption(
-  productName: string,
-  ctx: Scenes.WizardContext,
-  actualState: DailyFood
-): Promise<void> {
+  productName: string
+  // ctx: Scenes.WizardContext,
+  // actualState: DailyFood
+): Promise<any[]> {
   const searchResults = await productBase.aggregate([
     {
       $search: {
@@ -652,34 +650,10 @@ export async function findAndcalculateDailyConsumption(
     },
   ]);
 
-  if (searchResults.length === 0) {
-    await ctx.reply(
-      "No matching products found. Please check the name and try again."
-    );
-    return;
-  }
+  return searchResults;
+}
 
-  if (searchResults.length === 1) {
-    const product = searchResults[0];
-
-    const foodElement: FoodElement = {
-      name: product.name,
-      mass: actualState.mass,
-
-      kcal: product.kcal,
-      protein: product.protein,
-      saturated_fat: product.saturated_fat,
-      unsaturated_fat: product.unsaturated_fat,
-      totalFat: product.totalFat,
-      carbs: product.carbs,
-
-      tgId: product.tgId,
-    };
-
-    await calculateDailyConsumption(foodElement, actualState, ctx);
-    return;
-  }
-
+export function getChooseProductButton(searchResults: any[]) {
   const inlineKeyboard = searchResults.map((product) => [
     { text: product.name, callback_data: product._id.toString() },
   ]);
@@ -690,9 +664,7 @@ export async function findAndcalculateDailyConsumption(
     },
   };
 
-  await ctx.reply("Did you mean one of these products?", chooseProductButton);
-
-  actualState.arrayOfProducts = searchResults;
+  return chooseProductButton;
 }
 
 export async function calculateDailyConsumption(
@@ -833,7 +805,7 @@ export async function createOrUpdateProductInProductBase(
     const newProduct = new productBase(nutrition);
 
     await newProduct.save();
-    await ctx.reply("A new product was created in the database.");
+    await ctx.reply(`Product ${nutrition.name} was created in the database.`);
   }
 
   await ctx.scene.enter("START_CALCULATION");
@@ -963,37 +935,4 @@ Unsaturated fats: ${totals.unsatFatPercent}%`;
   await ctx.reply(productInfo);
   ctx.scene.enter("START_CALCULATION");
   return;
-}
-
-export async function findProductByNameOrFamiliar(
-  productName: string,
-  ctx: Scenes.WizardContext
-) {
-  const searchResults = await productBase.aggregate([
-    {
-      $search: {
-        index: "searchProsucts",
-        text: {
-          query: productName,
-          path: "name",
-        },
-      },
-    },
-  ]);
-
-  if (searchResults.length === 0) {
-    await ctx.reply(
-      "No matching products found. Please check the name and try again."
-    );
-    return;
-  }
-
-  let responseText = "Did you mean one of these products?\n";
-  searchResults.forEach((product) => {
-    responseText += `${product.name}\n`;
-  });
-
-  return {};
-
-  await ctx.reply(responseText);
 }
