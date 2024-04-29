@@ -8,6 +8,7 @@ import {
 import { userBase, dailyFoodBase, productBase } from "../utils/schemas";
 import { Scenes } from "telegraf";
 import { IsFixingSomethingAndFinalStep } from "../scenes/createProduct";
+import { callback } from "telegraf/typings/button";
 
 export const doneButton = {
   reply_markup: {
@@ -132,10 +133,11 @@ export const typeOfStatisticButton = {
       ],
       [
         {
-          text: "List of consumed products",
+          text: "List products",
           callback_data: "list-of-consumed-products",
         },
       ],
+      [{ text: "Delete product", callback_data: "delete-consumed-product" }],
     ],
   },
 };
@@ -635,8 +637,6 @@ export async function createProductInBase(
 }
 export async function findAndcalculateDailyConsumption(
   productName: string
-  // ctx: Scenes.WizardContext,
-  // actualState: DailyFood
 ): Promise<any[]> {
   const searchResults = await productBase.aggregate([
     {
@@ -832,7 +832,7 @@ export async function getConsumptionStatisticByDateAnTgId(
   startDate: Date,
   endDate: Date,
   ctx: Scenes.WizardContext
-) {
+): Promise<void> {
   const customDateString = formatDate(startDate);
 
   const filter = {

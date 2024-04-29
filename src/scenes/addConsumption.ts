@@ -152,11 +152,14 @@ async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
     );
     return;
   }
+  const product = Object.values(searchResults).find(
+    (product) => product.name === productName
+  );
 
-  if (searchResults.length === 1) {
-    const product = Object.values(searchResults).find(
-      (product) => product.name === productName
-    );
+  if (
+    searchResults.length === 1 ||
+    (product && product.name.split(" ").length >= 3)
+  ) {
     const foodElement: FoodElement = {
       name: product.name,
       mass: actualState.mass,

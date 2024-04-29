@@ -74,7 +74,8 @@ async function optionsOfDateStatistic(ctx: Scenes.WizardContext) {
 
     await ctx.reply(
       "General daily statistic - check general consumption statistic of day\n" +
-        "List of consumed products - check list of consumed products of day",
+        "List of products - check list of consumed products of day\n" +
+        "Delete product - delete consumed product of day",
       typeOfStatisticButton
     );
 
@@ -119,7 +120,6 @@ async function typeOfStatistic(ctx: Scenes.WizardContext) {
   }
 
   const callBackData = ctx.callbackQuery.data;
-  
 
   const tgId = (ctx.wizard.state as DailyFood).tgId;
   let checkForList = (ctx.wizard.state as DialogueState).listOfProducts;
@@ -151,5 +151,7 @@ async function typeOfStatistic(ctx: Scenes.WizardContext) {
         ctx
       );
       break;
+      case "delete-consumed-product":
+        
   }
 }
