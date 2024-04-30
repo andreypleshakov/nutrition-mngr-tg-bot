@@ -5,7 +5,7 @@ import assert from "assert-ts";
 import { addConsumption } from "./scenes/addConsumption";
 import { createProduct } from "./scenes/createProduct";
 import { createCombinedProduct } from "./scenes/createCombinedProduct";
-import { checkConsumptionStatistic } from "./scenes/checkConsumptionStatistic";
+import { checkOrDeleteConsumptionStatistic } from "./scenes/checkOrDeleteConsumptionStatistic";
 import { startCalculation } from "./scenes/startCalculation";
 import { costOfOneProteinsGram } from "./scenes/costOfOneProteinsGram";
 import mongoose from "mongoose";
@@ -42,7 +42,7 @@ const stage = new Scenes.Stage<Scenes.WizardContext>([
   createProduct,
   addConsumption,
   createCombinedProduct,
-  checkConsumptionStatistic,
+  checkOrDeleteConsumptionStatistic,
   costOfOneProteinsGram,
 ]);
 

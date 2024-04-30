@@ -1,41 +1,51 @@
-import { Scenes, Middleware } from "telegraf";
+import { Scenes, Middleware, Markup } from "telegraf";
 import {
-  typeOfStatisticButton,
+  getTypeOfStatisticButton,
   handleFromStartingScene,
   todayOrCustomDateButton,
-  getConsumptionStatisticByDateAnTgId,
+  getOrDeleteConsumptionStatisticByDateAnTgId,
   isValidDateFormat,
+  deleteProduct,
 } from "../utils/utils";
 import { DialogueState, DailyFood } from "../utils/models";
 
-const checkConsumptionStatisticSteps: Middleware<Scenes.WizardContext>[] = [
-  startingDialogue,
-  optionsOfDateStatistic,
-  customDateForStatistic,
-  typeOfStatistic,
-];
+const checkOrDeleteConsumptionStatisticSteps: Middleware<Scenes.WizardContext>[] =
+  [
+    startingDialogue,
+    optionsOfDateStatistic,
+    customDateForStatistic,
+    typeOfStatistic,
+    deleteConsumedProduct,
+  ];
 
-const startingDialogueStep = checkConsumptionStatisticSteps.findIndex(
+const startingDialogueStep = checkOrDeleteConsumptionStatisticSteps.findIndex(
   (scene) => scene === startingDialogue
 );
 
-const optionsOfDateStatisticStep = checkConsumptionStatisticSteps.findIndex(
-  (scene) => scene === optionsOfDateStatistic
-);
+const optionsOfDateStatisticStep =
+  checkOrDeleteConsumptionStatisticSteps.findIndex(
+    (scene) => scene === optionsOfDateStatistic
+  );
 
-const customDateForStatisticStep = checkConsumptionStatisticSteps.findIndex(
-  (scene) => scene === customDateForStatistic
-);
+const customDateForStatisticStep =
+  checkOrDeleteConsumptionStatisticSteps.findIndex(
+    (scene) => scene === customDateForStatistic
+  );
 
-const typeOfStatisticStep = checkConsumptionStatisticSteps.findIndex(
+const typeOfStatisticStep = checkOrDeleteConsumptionStatisticSteps.findIndex(
   (scene) => scene === typeOfStatistic
 );
 
-///////////// check consumption statistic (take data form daily_statistics)
-export const checkConsumptionStatistic =
+const deleteConsumedProductStep =
+  checkOrDeleteConsumptionStatisticSteps.findIndex(
+    (scene) => scene === deleteConsumedProduct
+  );
+
+///////////// check or delete consumption statistic (take data form daily_statistics)
+export const checkOrDeleteConsumptionStatistic =
   new Scenes.WizardScene<Scenes.WizardContext>(
-    "CHECK_CONSUMPTION_STATISTIC",
-    ...checkConsumptionStatisticSteps
+    "CHECK_OR_DELETE_CONSUMPTION_STATISTIC",
+    ...checkOrDeleteConsumptionStatisticSteps
   );
 
 async function startingDialogue(ctx: Scenes.WizardContext) {
@@ -50,7 +60,7 @@ async function startingDialogue(ctx: Scenes.WizardContext) {
   await ctx.reply(
     "TODAY - check today's consumption statistic\n" +
       "CUSTOM - check custom day of your consumption",
-    todayOrCustomDateButton
+    Markup.inlineKeyboard(todayOrCustomDateButton)
   );
   return ctx.wizard.selectStep(optionsOfDateStatisticStep);
 }
@@ -71,6 +81,7 @@ async function optionsOfDateStatistic(ctx: Scenes.WizardContext) {
     endDate.setDate(startDate.getDate() + 1);
 
     (ctx.wizard.state as DailyFood).dateOfConsumption = startDate;
+    const typeOfStatisticButton = getTypeOfStatisticButton();
 
     await ctx.reply(
       "General daily statistic - check general consumption statistic of day\n" +
@@ -104,10 +115,12 @@ async function customDateForStatistic(ctx: Scenes.WizardContext) {
   endDate.setDate(startDate.getDate() + 1);
 
   (ctx.wizard.state as DailyFood).dateOfConsumption = startDate;
+  const typeOfStatisticButton = getTypeOfStatisticButton();
 
   await ctx.reply(
     "General daily statistic - check general consumption statistic of day\n" +
-      "List of consumed products - check list of consumed products of day",
+      "List of products - check list of consumed products of day\n" +
+      "Delete product - delete consumed product of day",
     typeOfStatisticButton
   );
 
@@ -123,6 +136,7 @@ async function typeOfStatistic(ctx: Scenes.WizardContext) {
 
   const tgId = (ctx.wizard.state as DailyFood).tgId;
   let checkForList = (ctx.wizard.state as DialogueState).listOfProducts;
+  let deleteConsumption = (ctx.wizard.state as DialogueState).deleteConsumption;
 
   const startDate = (ctx.wizard.state as DailyFood).dateOfConsumption;
   const endDate = new Date(startDate);
@@ -133,9 +147,11 @@ async function typeOfStatistic(ctx: Scenes.WizardContext) {
   switch (callBackData) {
     case "general-daily-statistic":
       checkForList = false;
-      await getConsumptionStatisticByDateAnTgId(
+      deleteConsumption = false;
+      await getOrDeleteConsumptionStatisticByDateAnTgId(
         tgId,
         checkForList,
+        deleteConsumption,
         startDate,
         endDate,
         ctx
@@ -143,15 +159,41 @@ async function typeOfStatistic(ctx: Scenes.WizardContext) {
       break;
     case "list-of-consumed-products":
       checkForList = true;
-      await getConsumptionStatisticByDateAnTgId(
+      deleteConsumption = false;
+      await getOrDeleteConsumptionStatisticByDateAnTgId(
         tgId,
         checkForList,
+        deleteConsumption,
         startDate,
         endDate,
         ctx
       );
       break;
-      case "delete-consumed-product":
-        
+    case "delete-consumed-product":
+      checkForList = false;
+      deleteConsumption = true;
+      await getOrDeleteConsumptionStatisticByDateAnTgId(
+        tgId,
+        checkForList,
+        deleteConsumption,
+        startDate,
+        endDate,
+        ctx
+      );
+      return ctx.wizard.selectStep(deleteConsumedProductStep);
   }
+}
+
+async function deleteConsumedProduct(ctx: Scenes.WizardContext) {
+  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
+    return;
+  }
+
+  await ctx.answerCbQuery();
+
+  await deleteProduct(ctx.callbackQuery.data);
+  await ctx.reply(
+    "Product was succesfully deleted from your daily consumption list "
+  );
+  return ctx.scene.enter("START_CALCULATION");
 }

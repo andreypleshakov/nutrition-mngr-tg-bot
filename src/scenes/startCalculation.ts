@@ -43,7 +43,7 @@ export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
         return ctx.scene.enter("ADD_CONSUMPTION", fromStartingScene);
       case "check-consumption-statistic":
         return ctx.scene.enter(
-          "CHECK_CONSUMPTION_STATISTIC",
+          "CHECK_OR_DELETE_CONSUMPTION_STATISTIC",
           fromStartingScene
         );
       case "cost-of-protein":

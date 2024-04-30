@@ -6,9 +6,8 @@ import {
   CostOfProtein,
 } from "./models";
 import { userBase, dailyFoodBase, productBase } from "../utils/schemas";
-import { Scenes } from "telegraf";
+import { Scenes, Markup } from "telegraf";
 import { IsFixingSomethingAndFinalStep } from "../scenes/createProduct";
-import { callback } from "telegraf/typings/button";
 
 export const doneButton = {
   reply_markup: {
@@ -113,63 +112,44 @@ export const replaceAddOrIgnoreButton = {
   },
 };
 
-export const todayOrCustomDateButton = {
-  reply_markup: {
-    inline_keyboard: [
-      [{ text: "Today", callback_data: "today" }],
-      [{ text: "Custom Date", callback_data: "custom" }],
-    ],
-  },
-};
+export const todayOrCustomDateButton = [
+  Markup.button.callback("Today", "today"),
+  Markup.button.callback("Custom Date", "custom-date"),
+];
 
-export const typeOfStatisticButton = {
-  reply_markup: {
-    inline_keyboard: [
-      [
-        {
-          text: "General daily statistic",
-          callback_data: "general-daily-statistic",
-        },
-      ],
-      [
-        {
-          text: "List products",
-          callback_data: "list-of-consumed-products",
-        },
-      ],
-      [{ text: "Delete product", callback_data: "delete-consumed-product" }],
+export function getTypeOfStatisticButton(): ReturnType<
+  typeof Markup.inlineKeyboard
+> {
+  return Markup.inlineKeyboard([
+    [
+      Markup.button.callback(
+        "General daily statistic",
+        "general-daily-statistic"
+      ),
     ],
-  },
-};
+    [Markup.button.callback("List products", "list-of-consumed-products")],
+    [Markup.button.callback("Delete product", "delete-consumed-product")],
+  ]);
+}
 
 export function isCreateButton(ctx: any): boolean {
-  if (
-    ctx.callbackQuery !== undefined &&
-    (ctx.callbackQuery as any).data === "create"
-  ) {
+  if (ctx.callbackQuery !== undefined && ctx.callbackQuery.data === "create") {
     return true;
   }
   return false;
 }
 
-export function getFixButtonCombinedProduct(combinedProduct: CombinedProduct) {
-  const inlineKeyboard = Object.keys(combinedProduct.products).map(
-    (documentId) => {
-      const product = combinedProduct.products[documentId];
-      return [
-        {
-          text: `${product.name}: ${product.mass}`,
-          callback_data: `${product.documentId}`,
-        },
-      ];
-    }
+export function getFixButtonCombinedProduct(
+  combinedProduct: CombinedProduct
+): ReturnType<typeof Markup.inlineKeyboard> {
+  const buttons = Object.values(combinedProduct.products).map((product) =>
+    Markup.button.callback(
+      `${product.name}: ${product.mass}`,
+      `${product.documentId}`
+    )
   );
 
-  return {
-    reply_markup: {
-      inline_keyboard: inlineKeyboard,
-    },
-  };
+  return Markup.inlineKeyboard(buttons);
 }
 
 export function getYesOrNoButton(ctx: any): boolean {
@@ -826,9 +806,10 @@ export async function existanceOfUser(
   return false;
 }
 
-export async function getConsumptionStatisticByDateAnTgId(
+export async function getOrDeleteConsumptionStatisticByDateAnTgId(
   tgId: number,
   checkForList: boolean,
+  deleteConsumption: boolean,
   startDate: Date,
   endDate: Date,
   ctx: Scenes.WizardContext
@@ -848,7 +829,7 @@ export async function getConsumptionStatisticByDateAnTgId(
     return;
   }
 
-  if (checkForList === true) {
+  if (checkForList) {
     let productInfo = `List of consumed products (for ${customDateString}):\n`;
     foods.forEach((food) => {
       productInfo += `${food.name}: ${food.mass} g\n`;
@@ -859,6 +840,19 @@ export async function getConsumptionStatisticByDateAnTgId(
     return;
   }
 
+  if (deleteConsumption) {
+    const buttons = foods.map((food) => [
+      Markup.button.callback(
+        `${food.name}: ${food.mass}g`,
+        `${food._id.toString()}`
+      ),
+    ]);
+    await ctx.reply(
+      "Choose what you want to delete",
+      Markup.inlineKeyboard(buttons)
+    );
+    return;
+  }
   const totals = foods.reduce(
     (accumulator, food) => {
       accumulator.mass += food.mass;
@@ -935,4 +929,8 @@ Unsaturated fats: ${totals.unsatFatPercent}%`;
   await ctx.reply(productInfo);
   ctx.scene.enter("START_CALCULATION");
   return;
+}
+
+export async function deleteProduct(id: string) {
+  const result = await dailyFoodBase.deleteOne({ _id: id });
 }

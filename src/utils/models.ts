@@ -28,6 +28,8 @@ export interface DialogueState extends FoodElement {
 
   listOfProducts: boolean;
 
+  deleteConsumption: boolean;
+
   customMass: number;
 }
 

@@ -1,4 +1,4 @@
-import { Middleware, Scenes } from "telegraf";
+import { Middleware, Scenes, Markup } from "telegraf";
 import { DailyFood, FoodElement } from "../utils/models";
 import {
   handleFromStartingScene,
@@ -57,7 +57,7 @@ async function startingDialogue(ctx: Scenes.WizardContext) {
   await ctx.reply(
     "TODAY - check today's consumption statistic\n" +
       "CUSTOM - check custom day of your consumption",
-    todayOrCustomDateButton
+    Markup.inlineKeyboard(todayOrCustomDateButton)
   );
   return ctx.wizard.selectStep(todayOrCustomDateStep);
 }
@@ -157,7 +157,7 @@ async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
   );
 
   if (
-    searchResults.length === 1 ||
+    (product && searchResults.length === 1) ||
     (product && product.name.split(" ").length >= 3)
   ) {
     const foodElement: FoodElement = {
