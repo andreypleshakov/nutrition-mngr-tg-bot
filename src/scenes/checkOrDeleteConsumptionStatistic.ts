@@ -1,15 +1,18 @@
-import { Scenes, Middleware, Markup } from "telegraf";
+import { Middleware, Scenes, Markup } from "telegraf";
+
 import {
-  getTypeOfStatisticButton,
   handleFromStartingScene,
-  todayOrCustomDateButton,
   getOrDeleteConsumptionStatisticByDateAnTgId,
   isValidDateFormat,
   deleteProduct,
 } from "../utils/utils";
 import { DialogueState, DailyFood } from "../utils/models";
+import {
+  getTypeOfStatisticButton,
+  todayOrCustomDateButton,
+} from "../utils/buttons";
 
-const checkOrDeleteConsumptionStatisticSteps: Middleware<Scenes.WizardContext>[] =
+export const checkOrDeleteConsumptionStatisticSteps: Middleware<Scenes.WizardContext>[] =
   [
     startingDialogue,
     optionsOfDateStatistic,
@@ -18,25 +21,27 @@ const checkOrDeleteConsumptionStatisticSteps: Middleware<Scenes.WizardContext>[]
     deleteConsumedProduct,
   ];
 
-const startingDialogueStep = checkOrDeleteConsumptionStatisticSteps.findIndex(
-  (scene) => scene === startingDialogue
-);
+export const startingDialogueStep =
+  checkOrDeleteConsumptionStatisticSteps.findIndex(
+    (scene) => scene === startingDialogue
+  );
 
-const optionsOfDateStatisticStep =
+export const optionsOfDateStatisticStep =
   checkOrDeleteConsumptionStatisticSteps.findIndex(
     (scene) => scene === optionsOfDateStatistic
   );
 
-const customDateForStatisticStep =
+export const customDateForStatisticStep =
   checkOrDeleteConsumptionStatisticSteps.findIndex(
     (scene) => scene === customDateForStatistic
   );
 
-const typeOfStatisticStep = checkOrDeleteConsumptionStatisticSteps.findIndex(
-  (scene) => scene === typeOfStatistic
-);
+export const typeOfStatisticStep =
+  checkOrDeleteConsumptionStatisticSteps.findIndex(
+    (scene) => scene === typeOfStatistic
+  );
 
-const deleteConsumedProductStep =
+export const deleteConsumedProductStep =
   checkOrDeleteConsumptionStatisticSteps.findIndex(
     (scene) => scene === deleteConsumedProduct
   );
@@ -48,7 +53,7 @@ export const checkOrDeleteConsumptionStatistic =
     ...checkOrDeleteConsumptionStatisticSteps
   );
 
-async function startingDialogue(ctx: Scenes.WizardContext) {
+export async function startingDialogue(ctx: Scenes.WizardContext) {
   const fromStartingScene2 = await handleFromStartingScene(ctx);
 
   if (fromStartingScene2) {
@@ -65,7 +70,7 @@ async function startingDialogue(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(optionsOfDateStatisticStep);
 }
 
-async function optionsOfDateStatistic(ctx: Scenes.WizardContext) {
+export async function optionsOfDateStatistic(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
   }
@@ -96,7 +101,7 @@ async function optionsOfDateStatistic(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(customDateForStatisticStep);
 }
 
-async function customDateForStatistic(ctx: Scenes.WizardContext) {
+export async function customDateForStatistic(ctx: Scenes.WizardContext) {
   if (!ctx.message || !("text" in ctx.message)) {
     return;
   }
@@ -127,7 +132,7 @@ async function customDateForStatistic(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(typeOfStatisticStep);
 }
 
-async function typeOfStatistic(ctx: Scenes.WizardContext) {
+export async function typeOfStatistic(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
   }
@@ -184,7 +189,7 @@ async function typeOfStatistic(ctx: Scenes.WizardContext) {
   }
 }
 
-async function deleteConsumedProduct(ctx: Scenes.WizardContext) {
+export async function deleteConsumedProduct(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
   }

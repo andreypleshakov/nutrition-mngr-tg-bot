@@ -1,15 +1,20 @@
 import { Middleware, Scenes, Markup } from "telegraf";
-import { DailyFood, FoodElement } from "../utils/models";
+import { DailyFood, DialogueState } from "../utils/models";
+
 import {
   handleFromStartingScene,
   calculateDailyConsumption,
-  todayOrCustomDateButton,
   isValidDateFormat,
-  findAndcalculateDailyConsumption,
-  getChooseProductButton,
+  findProductInProductBase,
 } from "../utils/utils";
+import {
+  getChooseProductButton,
+  isCreateButton,
+  createButton,
+  todayOrCustomDateButton,
+} from "../utils/buttons";
 
-const addConsumptionSteps: Middleware<Scenes.WizardContext>[] = [
+export const addConsumptionSteps: Middleware<Scenes.WizardContext>[] = [
   startingDialogue,
   waitingForNameAndMassOfProduct,
   todayOrCustomDate,
@@ -17,23 +22,23 @@ const addConsumptionSteps: Middleware<Scenes.WizardContext>[] = [
   productOptions,
 ];
 
-const startingDialogueStep = addConsumptionSteps.findIndex(
+export const startingDialogueStep = addConsumptionSteps.findIndex(
   (scene) => scene === startingDialogue
 );
 
-const waitingForNameAndMassOfProductStep = addConsumptionSteps.findIndex(
+export const waitingForNameAndMassOfProductStep = addConsumptionSteps.findIndex(
   (scene) => scene === waitingForNameAndMassOfProduct
 );
 
-const todayOrCustomDateStep = addConsumptionSteps.findIndex(
+export const todayOrCustomDateStep = addConsumptionSteps.findIndex(
   (scene) => scene === todayOrCustomDate
 );
 
-const customDateStep = addConsumptionSteps.findIndex(
+export const customDateStep = addConsumptionSteps.findIndex(
   (scene) => scene === customDate
 );
 
-const productOptionsStep = addConsumptionSteps.findIndex(
+export const productOptionsStep = addConsumptionSteps.findIndex(
   (scene) => scene === productOptions
 );
 
@@ -45,7 +50,7 @@ export const addConsumption = new Scenes.WizardScene<Scenes.WizardContext>(
 );
 
 // start of the dialogue
-async function startingDialogue(ctx: Scenes.WizardContext) {
+export async function startingDialogue(ctx: Scenes.WizardContext) {
   (ctx.wizard.state as DailyFood).tgId = ctx.from!.id;
 
   const fromStartingScene2 = await handleFromStartingScene(ctx);
@@ -63,7 +68,7 @@ async function startingDialogue(ctx: Scenes.WizardContext) {
 }
 
 //today or custom day
-async function todayOrCustomDate(ctx: Scenes.WizardContext) {
+export async function todayOrCustomDate(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
   }
@@ -84,7 +89,7 @@ async function todayOrCustomDate(ctx: Scenes.WizardContext) {
 }
 
 //custom date
-async function customDate(ctx: Scenes.WizardContext) {
+export async function customDate(ctx: Scenes.WizardContext) {
   if (!ctx.message || !("text" in ctx.message)) {
     return;
   }
@@ -106,12 +111,21 @@ async function customDate(ctx: Scenes.WizardContext) {
 }
 
 // waiting for name and mass of product
-async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
+export async function waitingForNameAndMassOfProduct(
+  ctx: Scenes.WizardContext
+) {
+  const actualState = ctx.wizard.state as DailyFood;
+  const create = isCreateButton(ctx);
+
+  if (create) {
+    let initalState = {} as DialogueState;
+    initalState.name = actualState.name;
+    return ctx.scene.enter("CREATE_PRODUCT", initalState);
+  }
+
   if (!ctx.message || !("text" in ctx.message)) {
     return;
   }
-
-  const actualState = ctx.wizard.state as DailyFood;
 
   const inputProduct = ctx.message.text.trim();
 
@@ -142,38 +156,25 @@ async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
     return;
   }
 
+  actualState.name = productName;
   actualState.mass = productMass;
+  const tgId = actualState.tgId;
 
-  const searchResults = await findAndcalculateDailyConsumption(productName);
+  const searchResults = await findProductInProductBase(productName, tgId);
 
-  if (searchResults.length === 0) {
+  if (searchResults === null) {
+    await ctx.reply("This product does not exist in product database");
     await ctx.reply(
-      "No matching products found. Please check the name and try again."
+      `Create - to create ${productName} in product database\n
+        Or try again and just enter the name of product`,
+      createButton
     );
     return;
   }
-  const product = Object.values(searchResults).find(
-    (product) => product.name === productName
-  );
 
-  if (
-    (product && searchResults.length === 1) ||
-    (product && product.name.split(" ").length >= 3)
-  ) {
-    const foodElement: FoodElement = {
-      name: product.name,
-      mass: actualState.mass,
-
-      kcal: product.kcal,
-      protein: product.protein,
-      saturated_fat: product.saturated_fat,
-      unsaturated_fat: product.unsaturated_fat,
-      totalFat: product.totalFat,
-      carbs: product.carbs,
-
-      tgId: product.tgId,
-    };
-
+  if (searchResults.length === 1) {
+    const foodElement = searchResults[0];
+    foodElement.mass = productMass;
     await calculateDailyConsumption(foodElement, actualState, ctx);
     return;
   }
@@ -186,7 +187,7 @@ async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(productOptionsStep);
 }
 
-async function productOptions(ctx: Scenes.WizardContext) {
+export async function productOptions(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
   }
@@ -196,9 +197,9 @@ async function productOptions(ctx: Scenes.WizardContext) {
   const callBackData = ctx.callbackQuery.data;
   await ctx.answerCbQuery();
 
-  const product = Object.values(actualState.arrayOfProducts).find(
+  const foodElement = Object.values(actualState.arrayOfProducts).find(
     (product) => product._id!.toString() === callBackData
   );
 
-  await calculateDailyConsumption(product!, actualState, ctx);
+  await calculateDailyConsumption(foodElement!, actualState, ctx);
 }

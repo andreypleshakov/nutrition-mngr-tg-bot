@@ -5,7 +5,6 @@ export interface users {
 
 export interface FoodElement extends users {
   _id?: string;
-  documentId?: string;
   name?: string;
   mass: number;
   kcal: number;
@@ -45,7 +44,7 @@ export interface CostOfProtein {
 export interface DailyFood extends FoodElement {
   dateOfConsumption: Date;
 
-  arrayOfProducts: any[];
+  arrayOfProducts: FoodElement[];
   objectProduct: {};
 }
 
@@ -56,4 +55,6 @@ export interface CombinedProduct extends DialogueState {
   products: Record<string, FoodElement>;
   actualProductName: string;
   actualProductMass: number;
+
+  arrayOfProducts: FoodElement[];
 }

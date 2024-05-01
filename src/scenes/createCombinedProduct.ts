@@ -1,32 +1,36 @@
 import { Middleware, Scenes } from "telegraf";
+
 import { CombinedProduct, DialogueState } from "../utils/models";
 import {
-  getYesOrNoButton,
-  yesOrNoButton,
-  doneButton,
-  isDoneButton,
   getProductNameAndMass,
-  getFixButtonCombinedProduct,
   isValidNumberString,
   replaceCommaToDot,
   getProductNameById,
   replaceProductMassInState,
   recalculateCombinedMass,
-  replaceAddOrIgnoreButton,
   doesProductExistInState,
   handleFromStartingScene,
   doesExistTheSameProductWithTgId,
-  createOrDoneButton,
   createOrUpdateProductInProductBase,
   combineAllNutrition,
   addProductMassInState,
   updateProductMassAndName,
-  getProductNutritionFromBaseIfExists,
-  isCreateButton,
   IsInputStringAndNumber,
+  findProductInProductBase,
 } from "../utils/utils";
+import {
+  getYesOrNoButton,
+  yesOrNoButton,
+  doneButton,
+  isDoneButton,
+  getFixButtonCombinedProduct,
+  replaceAddOrIgnoreButton,
+  createOrDoneButton,
+  isCreateButton,
+  getChooseProductButton,
+} from "../utils/buttons";
 
-const createCombinedProductSteps: Middleware<Scenes.WizardContext>[] = [
+export const createCombinedProductSteps: Middleware<Scenes.WizardContext>[] = [
   startingDialogue,
   waitingForCombinedProductName,
   isReplaceTheProduct,
@@ -35,39 +39,48 @@ const createCombinedProductSteps: Middleware<Scenes.WizardContext>[] = [
   fixingAndFinal,
   fixingMassOfProduct,
   replaceAddOrIgnore,
+  productOptions,
 ];
 
-const startingDialogueStep = createCombinedProductSteps.findIndex(
+export const startingDialogueStep = createCombinedProductSteps.findIndex(
   (scene) => scene === startingDialogue
 );
 
-const waitingForCombinedProductNameStep = createCombinedProductSteps.findIndex(
-  (scene) => scene === waitingForCombinedProductName
-);
+export const waitingForCombinedProductNameStep =
+  createCombinedProductSteps.findIndex(
+    (scene) => scene === waitingForCombinedProductName
+  );
 
-const isReplaceTheProductStep = createCombinedProductSteps.findIndex(
+export const isReplaceTheProductStep = createCombinedProductSteps.findIndex(
   (scene) => scene === isReplaceTheProduct
 );
 
-const waitingForNameAndMassOfProductStep = createCombinedProductSteps.findIndex(
-  (scene) => scene === waitingForNameAndMassOfProduct
-);
+export const waitingForNameAndMassOfProductStep =
+  createCombinedProductSteps.findIndex(
+    (scene) => scene === waitingForNameAndMassOfProduct
+  );
 
-const isFixingSomethingOrFinishStep = createCombinedProductSteps.findIndex(
-  (scene) => scene === isFixingSomethingOrFinish
-);
+export const isFixingSomethingOrFinishStep =
+  createCombinedProductSteps.findIndex(
+    (scene) => scene === isFixingSomethingOrFinish
+  );
 
-const fixingAndFinalStep = createCombinedProductSteps.findIndex(
+export const fixingAndFinalStep = createCombinedProductSteps.findIndex(
   (scene) => scene === fixingAndFinal
 );
 
-const fixingMassOfProductStep = createCombinedProductSteps.findIndex(
+export const fixingMassOfProductStep = createCombinedProductSteps.findIndex(
   (scene) => scene === fixingMassOfProduct
 );
 
-const replaceAddOrIgnoreStep = createCombinedProductSteps.findIndex(
+export const replaceAddOrIgnoreStep = createCombinedProductSteps.findIndex(
   (scene) => scene === replaceAddOrIgnore
 );
+
+export const productOptionsStep = createCombinedProductSteps.findIndex(
+  (scene) => scene === productOptions
+);
+
 //////////////////////////////////////
 
 export const createCombinedProduct =
@@ -77,7 +90,7 @@ export const createCombinedProduct =
   );
 
 // start of the dialogue
-async function startingDialogue(ctx: Scenes.WizardContext) {
+export async function startingDialogue(ctx: Scenes.WizardContext) {
   (ctx.wizard.state as CombinedProduct).tgId = ctx.from!.id;
   const fromStartingScene2 = await handleFromStartingScene(ctx);
 
@@ -90,7 +103,7 @@ async function startingDialogue(ctx: Scenes.WizardContext) {
 }
 
 // waiting of the name of the combined product
-async function waitingForCombinedProductName(ctx: Scenes.WizardContext) {
+export async function waitingForCombinedProductName(ctx: Scenes.WizardContext) {
   if (!ctx.message || !("text" in ctx.message)) {
     return;
   }
@@ -132,7 +145,7 @@ async function waitingForCombinedProductName(ctx: Scenes.WizardContext) {
 }
 
 // waiting for "yes" or "no" answer of replace the product
-async function isReplaceTheProduct(ctx: Scenes.WizardContext) {
+export async function isReplaceTheProduct(ctx: Scenes.WizardContext) {
   const succesButton = getYesOrNoButton(ctx);
   await ctx.answerCbQuery(undefined);
 
@@ -152,7 +165,9 @@ async function isReplaceTheProduct(ctx: Scenes.WizardContext) {
 }
 
 // waiting for the name and mass of the product
-async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
+export async function waitingForNameAndMassOfProduct(
+  ctx: Scenes.WizardContext
+) {
   const actualState = ctx.wizard.state as CombinedProduct;
 
   const done = isDoneButton(ctx);
@@ -199,8 +214,9 @@ async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
     actualState
   );
 
+  actualState.actualProductMass = productMass;
+
   if (existanceOfProductInState) {
-    actualState.actualProductMass = productMass;
     await ctx.reply(
       "You can't have two identical products as a part of combined product"
     );
@@ -212,9 +228,9 @@ async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
     return ctx.wizard.selectStep(replaceAddOrIgnoreStep);
   }
 
-  const product = await getProductNutritionFromBaseIfExists(productName, tgId);
+  const searchResults = await findProductInProductBase(productName, tgId);
 
-  if (product === null) {
+  if (searchResults === null) {
     await ctx.reply("This product does not exist in product database");
     await ctx.reply(
       `
@@ -226,13 +242,52 @@ async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
     return ctx.wizard.selectStep(waitingForNameAndMassOfProductStep);
   }
 
-  const documentId = product.documentId!;
+  if (searchResults.length === 1) {
+    const foodElement = searchResults[0];
 
-  actualState.products[documentId] = product;
-  actualState.products[documentId].name = productName;
-  actualState.products[documentId].mass = productMass;
+    const documentId = foodElement._id!;
 
-  actualState.CombinedMass += productMass;
+    actualState.products[documentId] = foodElement;
+    actualState.products[documentId].name = productName;
+    actualState.products[documentId].mass = productMass;
+
+    actualState.CombinedMass += productMass;
+
+    await ctx.reply(
+      `Enter the name and mass (in gram) of the next product to combine in this format: NAME MASS press Done to calculate nutrition`,
+      doneButton
+    );
+    return ctx.wizard.selectStep(waitingForNameAndMassOfProductStep);
+  }
+
+  actualState.arrayOfProducts = searchResults;
+
+  const chooseProductButton = getChooseProductButton(searchResults);
+  await ctx.reply("Did you mean one of these products?", chooseProductButton);
+  return ctx.wizard.selectStep(productOptionsStep);
+}
+
+export async function productOptions(ctx: Scenes.WizardContext) {
+  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
+    return;
+  }
+
+  const actualState = ctx.wizard.state as CombinedProduct;
+
+  const callBackData = ctx.callbackQuery.data;
+  await ctx.answerCbQuery();
+
+  const foodElement = Object.values(actualState.arrayOfProducts).find(
+    (product) => product._id!.toString() === callBackData
+  );
+
+  const documentId = foodElement!._id!;
+
+  actualState.products[documentId] = foodElement!;
+  actualState.products[documentId].name = actualState.actualProductName;
+  actualState.products[documentId].mass = actualState.actualProductMass;
+
+  actualState.CombinedMass += actualState.actualProductMass;
 
   await ctx.reply(
     `Enter the name and mass (in gram) of the next product to combine in this format: NAME MASS press Done to calculate nutrition`,
@@ -242,7 +297,7 @@ async function waitingForNameAndMassOfProduct(ctx: Scenes.WizardContext) {
 }
 
 // replace, add or ingore product in state
-async function replaceAddOrIgnore(ctx: Scenes.WizardContext) {
+export async function replaceAddOrIgnore(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
   }
@@ -290,11 +345,15 @@ async function replaceAddOrIgnore(ctx: Scenes.WizardContext) {
 }
 
 ////// waiting for "yes" or "no" answer of fixing something or finish the dialogue
-async function isFixingSomethingOrFinish(ctx: Scenes.WizardContext) {
+export async function isFixingSomethingOrFinish(ctx: Scenes.WizardContext) {
   const actualState = ctx.wizard.state as CombinedProduct;
   const succesButton = getYesOrNoButton(ctx);
 
   await ctx.answerCbQuery();
+
+  await ctx.reply(
+    "Choose prodct that you want to fix or press Done to calculate"
+  );
 
   if (succesButton) {
     const fixButtonCombinedProduct = getFixButtonCombinedProduct(actualState);
@@ -310,12 +369,8 @@ async function isFixingSomethingOrFinish(ctx: Scenes.WizardContext) {
 }
 
 // fixing something and then finish the dialogue
-async function fixingAndFinal(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.callbackQuery ||
-    !("data" in ctx.callbackQuery) ||
-    ctx.callbackQuery === undefined
-  ) {
+export async function fixingAndFinal(ctx: Scenes.WizardContext) {
+  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
   }
 
@@ -332,7 +387,7 @@ async function fixingAndFinal(ctx: Scenes.WizardContext) {
 }
 
 //fixing mass of product
-async function fixingMassOfProduct(ctx: Scenes.WizardContext) {
+export async function fixingMassOfProduct(ctx: Scenes.WizardContext) {
   if (!ctx.message || !("text" in ctx.message)) {
     return;
   }

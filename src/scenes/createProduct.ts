@@ -1,20 +1,22 @@
 import { Middleware, Scenes } from "telegraf";
 import { DialogueState, FoodElement } from "../utils/models";
 import {
-  getYesOrNoButton,
-  yesOrNoButton,
   isValidNumberString,
   replaceCommaToDot,
-  fixButtonProductBase,
   doesExistTheSameProductWithTgId,
   handleFromFixingStep,
   createOrUpdateProductInProductBase,
-  perButton,
   calculateAndRoundNutrient,
   roundToThree,
 } from "../utils/utils";
+import {
+  getYesOrNoButton,
+  yesOrNoButton,
+  fixButtonProductBase,
+  perButton,
+} from "../utils/buttons";
 
-const createProductSteps: Middleware<Scenes.WizardContext>[] = [
+export const createProductSteps: Middleware<Scenes.WizardContext>[] = [
   startingDialogue,
   waitingForProductName,
   isUpdatingTheProduct,
@@ -30,35 +32,35 @@ const createProductSteps: Middleware<Scenes.WizardContext>[] = [
   totalFatPerGram,
 ];
 
-const startingDialogueStep = createProductSteps.findIndex(
+export const startingDialogueStep = createProductSteps.findIndex(
   (scene) => scene === startingDialogue
 );
 
-const waitingForProductNameStep = createProductSteps.findIndex(
+export const waitingForProductNameStep = createProductSteps.findIndex(
   (scene) => scene === waitingForProductName
 );
 
-const isUpdatingTheProductStep = createProductSteps.findIndex(
+export const isUpdatingTheProductStep = createProductSteps.findIndex(
   (scene) => scene === isUpdatingTheProduct
 );
 
-const kcalsPerGramStep = createProductSteps.findIndex(
+export const kcalsPerGramStep = createProductSteps.findIndex(
   (scene) => scene === kcalsPerGram
 );
 
-const proteinsPerGramStep = createProductSteps.findIndex(
+export const proteinsPerGramStep = createProductSteps.findIndex(
   (scene) => scene === proteinsPerGram
 );
 
-const saturatedFatPerGramStep = createProductSteps.findIndex(
+export const saturatedFatPerGramStep = createProductSteps.findIndex(
   (scene) => scene === saturatedFatPerGram
 );
 
-const unsaturatedFatPerGramStep = createProductSteps.findIndex(
+export const unsaturatedFatPerGramStep = createProductSteps.findIndex(
   (scene) => scene === unsaturatedFatPerGram
 );
 
-const carbohydratesPerGramStep = createProductSteps.findIndex(
+export const carbohydratesPerGramStep = createProductSteps.findIndex(
   (scene) => scene === carbohydratesPerGram
 );
 
@@ -66,20 +68,20 @@ export const IsFixingSomethingAndFinalStep = createProductSteps.findIndex(
   (scene) => scene === IsFixingSomethingAndFinal
 );
 
-const fixingSomethingAndFinalStep = createProductSteps.findIndex(
+export const fixingSomethingAndFinalStep = createProductSteps.findIndex(
   (scene) => scene === fixingSomethingAndFinal
 );
 
-const perHundredOrCustomMassStep = createProductSteps.findIndex(
+export const perHundredOrCustomMassStep = createProductSteps.findIndex(
   (scene) => scene === perHundredOrCustomMass
 );
 createProductSteps;
 
-const customMassStep = createProductSteps.findIndex(
+export const customMassStep = createProductSteps.findIndex(
   (scene) => scene === customMass
 );
 
-const totalFatPerGramStep = createProductSteps.findIndex(
+export const totalFatPerGramStep = createProductSteps.findIndex(
   (scene) => scene === totalFatPerGram
 );
 
@@ -91,7 +93,7 @@ export const createProduct = new Scenes.WizardScene<Scenes.WizardContext>(
 );
 
 // start of the dialogue
-async function startingDialogue(ctx: Scenes.WizardContext) {
+export async function startingDialogue(ctx: Scenes.WizardContext) {
   (ctx.wizard.state as FoodElement).tgId = ctx.from!.id;
 
   await ctx.reply("Name of product");
@@ -99,7 +101,7 @@ async function startingDialogue(ctx: Scenes.WizardContext) {
 }
 
 // waiting of the name of the product
-async function waitingForProductName(ctx: Scenes.WizardContext) {
+export async function waitingForProductName(ctx: Scenes.WizardContext) {
   if (!ctx.message || !("text" in ctx.message)) {
     await ctx.reply("Wrong, write a product name");
     return;
@@ -135,7 +137,7 @@ async function waitingForProductName(ctx: Scenes.WizardContext) {
 }
 
 //waiting for choose scope of mass of nutrition
-async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
+export async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
   }
@@ -153,7 +155,7 @@ async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
   }
 }
 
-async function customMass(ctx: Scenes.WizardContext) {
+export async function customMass(ctx: Scenes.WizardContext) {
   if (
     !ctx.message ||
     !("text" in ctx.message) ||
@@ -177,7 +179,7 @@ async function customMass(ctx: Scenes.WizardContext) {
 }
 
 // waiting for "yes" or "no" answer of replacing the product (step: 2)
-async function isUpdatingTheProduct(ctx: Scenes.WizardContext) {
+export async function isUpdatingTheProduct(ctx: Scenes.WizardContext) {
   const succesButton = getYesOrNoButton(ctx);
   await ctx.answerCbQuery(undefined);
 
@@ -200,7 +202,7 @@ async function isUpdatingTheProduct(ctx: Scenes.WizardContext) {
 }
 
 // waiting for the kcals per gram
-async function kcalsPerGram(ctx: Scenes.WizardContext) {
+export async function kcalsPerGram(ctx: Scenes.WizardContext) {
   if (
     !ctx.message ||
     !("text" in ctx.message) ||
@@ -225,7 +227,7 @@ async function kcalsPerGram(ctx: Scenes.WizardContext) {
 }
 
 // waiting for the proteins per gram
-async function proteinsPerGram(ctx: Scenes.WizardContext) {
+export async function proteinsPerGram(ctx: Scenes.WizardContext) {
   if (
     !ctx.message ||
     !("text" in ctx.message) ||
@@ -252,7 +254,7 @@ async function proteinsPerGram(ctx: Scenes.WizardContext) {
 }
 
 //waitnig for total fat per gram
-async function totalFatPerGram(ctx: Scenes.WizardContext) {
+export async function totalFatPerGram(ctx: Scenes.WizardContext) {
   if (
     !ctx.message ||
     !("text" in ctx.message) ||
@@ -286,7 +288,7 @@ async function totalFatPerGram(ctx: Scenes.WizardContext) {
 }
 
 // waiting for the saturated fat per gram
-async function saturatedFatPerGram(ctx: Scenes.WizardContext) {
+export async function saturatedFatPerGram(ctx: Scenes.WizardContext) {
   if (
     !ctx.message ||
     !("text" in ctx.message) ||
@@ -315,7 +317,7 @@ async function saturatedFatPerGram(ctx: Scenes.WizardContext) {
 }
 
 // waiting for the unsaturated fat per gram
-async function unsaturatedFatPerGram(ctx: Scenes.WizardContext) {
+export async function unsaturatedFatPerGram(ctx: Scenes.WizardContext) {
   if (
     !ctx.message ||
     !("text" in ctx.message) ||
@@ -345,7 +347,7 @@ async function unsaturatedFatPerGram(ctx: Scenes.WizardContext) {
 }
 
 // waiting for the carbohydrates per gram
-async function carbohydratesPerGram(ctx: Scenes.WizardContext) {
+export async function carbohydratesPerGram(ctx: Scenes.WizardContext) {
   if (
     !ctx.message ||
     !("text" in ctx.message) ||
@@ -384,7 +386,7 @@ async function carbohydratesPerGram(ctx: Scenes.WizardContext) {
 }
 
 // waiting for "yes" or "no" answer of fixing something or finish the dialogue
-async function IsFixingSomethingAndFinal(ctx: Scenes.WizardContext) {
+export async function IsFixingSomethingAndFinal(ctx: Scenes.WizardContext) {
   const succesButton = getYesOrNoButton(ctx);
   await ctx.answerCbQuery(undefined);
 
@@ -422,7 +424,7 @@ async function IsFixingSomethingAndFinal(ctx: Scenes.WizardContext) {
 }
 
 // fixing something and then finish the dialogue
-async function fixingSomethingAndFinal(ctx: Scenes.WizardContext) {
+export async function fixingSomethingAndFinal(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
   }

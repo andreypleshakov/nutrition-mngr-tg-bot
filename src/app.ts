@@ -46,6 +46,12 @@ const stage = new Scenes.Stage<Scenes.WizardContext>([
   costOfOneProteinsGram,
 ]);
 
+stage.command("cancel", async (ctx) => {
+  await ctx.reply("Cancelling the current operation...");
+  await ctx.scene.leave();
+  ctx.scene.enter("START_CALCULATION");
+});
+
 bot.use(session());
 bot.use(stage.middleware());
 

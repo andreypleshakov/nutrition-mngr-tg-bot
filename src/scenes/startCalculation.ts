@@ -1,7 +1,8 @@
 import { Scenes } from "telegraf";
 import { DialogueState } from "../utils/models";
 import { userBase } from "../utils/schemas";
-import { existanceOfUser, sceneButtons } from "../utils/utils";
+import { existanceOfUser } from "../utils/utils";
+import { sceneButtons } from "../utils/buttons";
 
 export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
   "START_CALCULATION",

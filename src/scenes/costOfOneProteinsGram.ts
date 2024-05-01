@@ -1,14 +1,15 @@
 import { Middleware, Scenes } from "telegraf";
+
 import {
-  perButton,
   isValidNumberString,
   replaceCommaToDot,
   IsInputStringAndNumber,
   calculationOfCostProtein,
 } from "../utils/utils";
 import { CostOfProtein } from "../utils/models";
+import { perButton } from "../utils/buttons";
 
-const costOfOneProteinsGramSteps: Middleware<Scenes.WizardContext>[] = [
+export const costOfOneProteinsGramSteps: Middleware<Scenes.WizardContext>[] = [
   startingDialogue,
   nameOfProduct,
   perHundredOrCustomMass,
@@ -19,39 +20,39 @@ const costOfOneProteinsGramSteps: Middleware<Scenes.WizardContext>[] = [
   finalCalculation,
 ];
 
-const startingDialogueStep = costOfOneProteinsGramSteps.findIndex(
+export const startingDialogueStep = costOfOneProteinsGramSteps.findIndex(
   (scene) => scene === startingDialogue
 );
 
-const nameOfProductStep = costOfOneProteinsGramSteps.findIndex(
+export const nameOfProductStep = costOfOneProteinsGramSteps.findIndex(
   (scene) => scene === nameOfProduct
 );
 
-const perHundredOrCustomMassStep = costOfOneProteinsGramSteps.findIndex(
+export const perHundredOrCustomMassStep = costOfOneProteinsGramSteps.findIndex(
   (scene) => scene === perHundredOrCustomMass
 );
 
-const customMassStep = costOfOneProteinsGramSteps.findIndex(
+export const customMassStep = costOfOneProteinsGramSteps.findIndex(
   (scene) => scene === customMass
 );
 
-const proteinPerSelectedMassStep = costOfOneProteinsGramSteps.findIndex(
+export const proteinPerSelectedMassStep = costOfOneProteinsGramSteps.findIndex(
   (scene) => scene === proteinPerSelectedMass
 );
 
-const totalMassOfProductStep = costOfOneProteinsGramSteps.findIndex(
+export const totalMassOfProductStep = costOfOneProteinsGramSteps.findIndex(
   (scene) => scene === totalMassOfProduct
 );
 
-const costOfProductStep = costOfOneProteinsGramSteps.findIndex(
+export const costOfProductStep = costOfOneProteinsGramSteps.findIndex(
   (scene) => scene === costOfProduct
 );
 
-const fixingOrFinalStep = costOfOneProteinsGramSteps.findIndex(
+export const fixingOrFinalStep = costOfOneProteinsGramSteps.findIndex(
   (scene) => scene === fixingOrFinal
 );
 
-const finalCalculationStep = costOfOneProteinsGramSteps.findIndex(
+export const finalCalculationStep = costOfOneProteinsGramSteps.findIndex(
   (scene) => scene === finalCalculation
 );
 
@@ -62,12 +63,12 @@ export const costOfOneProteinsGram =
   );
 
 //start dialogue
-async function startingDialogue(ctx: Scenes.WizardContext) {
+export async function startingDialogue(ctx: Scenes.WizardContext) {
   await ctx.reply("Name of product");
   return ctx.wizard.selectStep(nameOfProductStep);
 }
 
-async function nameOfProduct(ctx: Scenes.WizardContext) {
+export async function nameOfProduct(ctx: Scenes.WizardContext) {
   if (!ctx.message || !("text" in ctx.message)) {
     await ctx.reply("Wrong, write a product name");
     return;
@@ -81,7 +82,7 @@ async function nameOfProduct(ctx: Scenes.WizardContext) {
 }
 
 //choose scope of mass of nutrition
-async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
+export async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
   }
@@ -99,7 +100,7 @@ async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
 }
 
 //if custom mass
-async function customMass(ctx: Scenes.WizardContext) {
+export async function customMass(ctx: Scenes.WizardContext) {
   if (
     !ctx.message ||
     !("text" in ctx.message) ||
@@ -123,7 +124,7 @@ async function customMass(ctx: Scenes.WizardContext) {
 }
 
 //enter protein per selected mass
-async function proteinPerSelectedMass(ctx: Scenes.WizardContext) {
+export async function proteinPerSelectedMass(ctx: Scenes.WizardContext) {
   if (
     !ctx.message ||
     !("text" in ctx.message) ||
@@ -142,7 +143,7 @@ async function proteinPerSelectedMass(ctx: Scenes.WizardContext) {
 }
 
 //enter total mass of product
-async function totalMassOfProduct(ctx: Scenes.WizardContext) {
+export async function totalMassOfProduct(ctx: Scenes.WizardContext) {
   if (
     !ctx.message ||
     !("text" in ctx.message) ||
@@ -161,7 +162,7 @@ async function totalMassOfProduct(ctx: Scenes.WizardContext) {
 }
 
 //enter cost of product
-async function costOfProduct(ctx: Scenes.WizardContext) {
+export async function costOfProduct(ctx: Scenes.WizardContext) {
   if (!ctx.message || !("text" in ctx.message)) {
     await ctx.reply(
       "Wrong! Enter currency with cost of product in this format: usd 100, usd 10.1, usd 10,1"
@@ -210,7 +211,7 @@ async function costOfProduct(ctx: Scenes.WizardContext) {
 }
 
 //edit something?
-async function fixingOrFinal(ctx: Scenes.WizardContext) {
+export async function fixingOrFinal(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
   }
@@ -241,7 +242,7 @@ async function fixingOrFinal(ctx: Scenes.WizardContext) {
   }
 }
 
-async function finalCalculation(ctx: Scenes.WizardContext) {
+export async function finalCalculation(ctx: Scenes.WizardContext) {
   const actualState = ctx.wizard.state as CostOfProtein;
 
   //TO DO
