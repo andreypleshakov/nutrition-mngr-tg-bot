@@ -1,5 +1,4 @@
 import { Middleware, Scenes, Markup } from "telegraf";
-
 import {
   handleFromStartingScene,
   getOrDeleteConsumptionStatisticByDateAnTgId,

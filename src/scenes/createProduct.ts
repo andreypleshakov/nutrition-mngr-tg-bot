@@ -12,8 +12,9 @@ import {
 import {
   getYesOrNoButton,
   yesOrNoButton,
-  fixButtonProductBase,
+  getfixButtonProductBase,
   perButton,
+  doneButton,
 } from "../utils/buttons";
 
 export const createProductSteps: Middleware<Scenes.WizardContext>[] = [
@@ -25,7 +26,6 @@ export const createProductSteps: Middleware<Scenes.WizardContext>[] = [
   saturatedFatPerGram,
   unsaturatedFatPerGram,
   carbohydratesPerGram,
-  IsFixingSomethingAndFinal,
   fixingSomethingAndFinal,
   perHundredOrCustomMass,
   customMass,
@@ -63,11 +63,6 @@ export const unsaturatedFatPerGramStep = createProductSteps.findIndex(
 export const carbohydratesPerGramStep = createProductSteps.findIndex(
   (scene) => scene === carbohydratesPerGram
 );
-
-export const IsFixingSomethingAndFinalStep = createProductSteps.findIndex(
-  (scene) => scene === IsFixingSomethingAndFinal
-);
-
 export const fixingSomethingAndFinalStep = createProductSteps.findIndex(
   (scene) => scene === fixingSomethingAndFinal
 );
@@ -359,8 +354,6 @@ export async function carbohydratesPerGram(ctx: Scenes.WizardContext) {
 
   const actualState = ctx.wizard.state as FoodElement;
 
-  const customMass = (ctx.wizard.state as DialogueState).customMass;
-
   actualState.carbs = replaceCommaToDot(ctx.message.text);
 
   const fromFixingStep = await handleFromFixingStep(ctx);
@@ -369,58 +362,13 @@ export async function carbohydratesPerGram(ctx: Scenes.WizardContext) {
     return;
   }
 
-  const productInfo = `
-  Product Name: ${actualState.name}
-  Nutritions per ${customMass} gram:
-    Calories: ${actualState.kcal}
-    Proteins: ${actualState.protein}
-    Total fat: ${actualState.totalFat}:
-      Saturated fats: ${actualState.saturated_fat}
-      Unsaturated fats: ${roundToThree(actualState.unsaturated_fat)}
-    Carbohydrates: ${actualState.carbs}`;
+  const fixButtonProductBase = getfixButtonProductBase(actualState);
 
-  await ctx.reply(productInfo);
-
-  await ctx.reply("Do you want to fix something?", yesOrNoButton);
-  return ctx.wizard.selectStep(IsFixingSomethingAndFinalStep);
-}
-
-// waiting for "yes" or "no" answer of fixing something or finish the dialogue
-export async function IsFixingSomethingAndFinal(ctx: Scenes.WizardContext) {
-  const succesButton = getYesOrNoButton(ctx);
-  await ctx.answerCbQuery(undefined);
-
-  if (succesButton) {
-    await ctx.reply("Choose what you want ot fix", fixButtonProductBase);
-    return ctx.wizard.selectStep(fixingSomethingAndFinalStep);
-  }
-
-  const actualState = ctx.wizard.state as FoodElement;
-  const customMass = (ctx.wizard.state as DialogueState).customMass;
-  const updateCheck = (ctx.scene.state as DialogueState).updateProduct;
-
-  type NutrientKeys = Exclude<
-    keyof FoodElement,
-    "name" | "tgId" | "documentId" | "tgUserName" | "_id"
-  >;
-
-  const nutrientKeys: NutrientKeys[] = [
-    "kcal",
-    "protein",
-    "totalFat",
-    "saturated_fat",
-    "unsaturated_fat",
-    "carbs",
-  ];
-
-  nutrientKeys.forEach((nutrientKey) => {
-    actualState[nutrientKey] = calculateAndRoundNutrient(
-      actualState[nutrientKey],
-      customMass
-    );
-  });
-
-  await createOrUpdateProductInProductBase(actualState, updateCheck, ctx);
+  await ctx.reply(
+    "Choose what you want ot fix or press done to create product",
+    fixButtonProductBase
+  );
+  return ctx.wizard.selectStep(fixingSomethingAndFinalStep);
 }
 
 // fixing something and then finish the dialogue
@@ -430,11 +378,11 @@ export async function fixingSomethingAndFinal(ctx: Scenes.WizardContext) {
   }
 
   const customMass = (ctx.wizard.state as DialogueState).customMass;
-
+  const actualState = ctx.wizard.state as FoodElement;
+  const updateCheck = (ctx.scene.state as DialogueState).updateProduct;
   (ctx.wizard.state as DialogueState).fromFixingStep = true;
 
   const callBackData = ctx.callbackQuery.data;
-
   await ctx.answerCbQuery();
 
   switch (callBackData) {
@@ -459,5 +407,28 @@ export async function fixingSomethingAndFinal(ctx: Scenes.WizardContext) {
     case "carbs":
       await ctx.reply(`Carbohydrates per ${customMass} gram`);
       return ctx.wizard.selectStep(carbohydratesPerGramStep);
+    case "done":
+      type NutrientKeys = Exclude<
+        keyof FoodElement,
+        "name" | "tgId" | "documentId" | "tgUserName" | "_id"
+      >;
+
+      const nutrientKeys: NutrientKeys[] = [
+        "kcal",
+        "protein",
+        "totalFat",
+        "saturated_fat",
+        "unsaturated_fat",
+        "carbs",
+      ];
+
+      nutrientKeys.forEach((nutrientKey) => {
+        actualState[nutrientKey] = calculateAndRoundNutrient(
+          actualState[nutrientKey],
+          customMass
+        );
+      });
+
+      await createOrUpdateProductInProductBase(actualState, updateCheck, ctx);
   }
 }

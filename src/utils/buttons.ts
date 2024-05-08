@@ -1,6 +1,6 @@
 import { Markup } from "telegraf";
 
-import { CombinedProduct } from "./models";
+import { CombinedProduct, FoodElement } from "./models";
 
 export const doneButton = {
   reply_markup: {
@@ -34,19 +34,35 @@ export const yesOrNoButton = {
   },
 };
 
-export const fixButtonProductBase = {
-  reply_markup: {
-    inline_keyboard: [
-      [{ text: "Name", callback_data: "name" }],
-      [{ text: "Calories", callback_data: "kcal" }],
-      [{ text: "Proteins", callback_data: "protein" }],
-      [{ text: "Total fats", callback_data: "total-fat" }],
-      [{ text: "Saturated fats", callback_data: "saturated-fat" }],
-      [{ text: "Unsaturated fats", callback_data: "unsaturated-fat" }],
-      [{ text: "Carbohydrates", callback_data: "carbs" }],
+export function getfixButtonProductBase(
+  actualState: FoodElement
+): ReturnType<typeof Markup.inlineKeyboard> {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback(`Name: ${actualState.name}`, "name")],
+    [Markup.button.callback(`Kcal: ${actualState.kcal}`, "kcal")],
+    [Markup.button.callback(`Protein: ${actualState.protein}`, "protein")],
+    [
+      Markup.button.callback(
+        `Total fats: ${actualState.totalFat}`,
+        "total-fat"
+      ),
     ],
-  },
-};
+    [
+      Markup.button.callback(
+        `Saturated fats: ${actualState.saturated_fat}`,
+        "saturated-fat"
+      ),
+    ],
+    [
+      Markup.button.callback(
+        `Unsaturated fats: ${actualState.unsaturated_fat}`,
+        "unsaturated-fat"
+      ),
+    ],
+    [Markup.button.callback(`Carbohydrates: ${actualState.carbs}`, "carbs")],
+    [Markup.button.callback("Done", "done")],
+  ]);
+}
 
 export const perButton = {
   reply_markup: {
@@ -141,9 +157,16 @@ export function isCreateButton(ctx: any): boolean {
 export function getFixButtonCombinedProduct(
   combinedProduct: CombinedProduct
 ): ReturnType<typeof Markup.inlineKeyboard> {
-  const buttons = Object.values(combinedProduct.products).map((product) =>
-    Markup.button.callback(`${product.name}: ${product.mass}`, `${product._id}`)
-  );
+  const buttons = Object.values(combinedProduct.products).map((product) => [
+    Markup.button.callback(
+      `${product.name}: ${product.mass}`,
+      `${product._id}`
+    ),
+  ]);
+
+  const doneButton = [Markup.button.callback("Done", "done_action")];
+
+  buttons.push(doneButton);
 
   return Markup.inlineKeyboard(buttons);
 }

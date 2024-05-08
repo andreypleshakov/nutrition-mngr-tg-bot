@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import {users, DailyFood, FoodElement} from "./models";
+import { users, DailyFood, FoodElement } from "./models";
 
 export const userSchema = new Schema<users>({
   tgId: { type: Number, required: true, unique: true },
@@ -33,5 +33,7 @@ const productBaseSchema = new Schema<FoodElement>({
   carbs: { type: Number, required: true },
   tgId: { type: Number, required: true },
 });
+
+productBaseSchema.index({ name: 1, telegramId: 1 }, { unique: true });
 
 export const productBase = model<FoodElement>("productBase", productBaseSchema);

@@ -5,10 +5,10 @@ import {
   DialogueState,
   CostOfProtein,
 } from "./models";
-import { userBase, dailyFoodBase, productBase } from "../utils/schemas";
+import { userBase, dailyFoodBase, productBase } from "./schemas";
 import { Scenes, Markup } from "telegraf";
-import { IsFixingSomethingAndFinalStep } from "../scenes/createProduct";
-import { yesOrNoButton } from "./buttons";
+import { fixingSomethingAndFinalStep } from "../scenes/createProduct";
+import { getfixButtonProductBase } from "./buttons";
 
 export function calculationOfCostProtein(actualState: CostOfProtein): number {
   const amountOfProtein = actualState.protein / actualState.massScope;
@@ -202,6 +202,7 @@ export function isValidNumberString(text: string): boolean {
 export function combineAllNutrition(
   combinedProduct: CombinedProduct
 ): FoodElement {
+
   let resultProduct: FoodElement = {
     name: combinedProduct.CombinedName,
     mass: combinedProduct.CombinedMass,
@@ -341,24 +342,14 @@ export async function handleFromFixingStep(
 ): Promise<boolean> {
   const dialogueState = ctx.wizard.state as DialogueState;
   const actualState = ctx.wizard.state as FoodElement;
+  const fixButtonProductBase = getfixButtonProductBase(actualState);
 
   if (dialogueState.fromFixingStep) {
-    const productInfo = `
-    Product Name: ${actualState.name}
-    Calories: ${actualState.kcal}
-    Proteins: ${actualState.protein}
-    Total fat: ${actualState.totalFat}:
-      Saturated fats: ${actualState.saturated_fat}
-      Unsaturated fats: ${actualState.unsaturated_fat}
-    Carbohydrates: ${actualState.carbs}`;
-
-    await ctx.reply(productInfo);
-
     await ctx.reply(
-      "Press YES if you want to fix something else or NO if you want to add product to database",
-      yesOrNoButton
+      "Choose what you want ot fix or press done to create product",
+      fixButtonProductBase
     );
-    ctx.wizard.selectStep(IsFixingSomethingAndFinalStep);
+    ctx.wizard.selectStep(fixingSomethingAndFinalStep);
     return true;
   }
   return false;

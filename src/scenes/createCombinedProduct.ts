@@ -29,13 +29,13 @@ import {
   isCreateButton,
   getChooseProductButton,
 } from "../utils/buttons";
+import { FoodElement } from "../utils/models";
 
 export const createCombinedProductSteps: Middleware<Scenes.WizardContext>[] = [
   startingDialogue,
   waitingForCombinedProductName,
   isReplaceTheProduct,
   waitingForNameAndMassOfProduct,
-  isFixingSomethingOrFinish,
   fixingAndFinal,
   fixingMassOfProduct,
   replaceAddOrIgnore,
@@ -58,11 +58,6 @@ export const isReplaceTheProductStep = createCombinedProductSteps.findIndex(
 export const waitingForNameAndMassOfProductStep =
   createCombinedProductSteps.findIndex(
     (scene) => scene === waitingForNameAndMassOfProduct
-  );
-
-export const isFixingSomethingOrFinishStep =
-  createCombinedProductSteps.findIndex(
-    (scene) => scene === isFixingSomethingOrFinish
   );
 
 export const fixingAndFinalStep = createCombinedProductSteps.findIndex(
@@ -172,11 +167,14 @@ export async function waitingForNameAndMassOfProduct(
 
   const done = isDoneButton(ctx);
   if (done) {
-    await ctx.answerCbQuery(undefined);
-    const productInfo = getProductNameAndMass(actualState);
-    await ctx.reply(productInfo.join("\n"));
-    await ctx.reply("Do you want to fix something?", yesOrNoButton);
-    return ctx.wizard.selectStep(isFixingSomethingOrFinishStep);
+    await ctx.answerCbQuery();
+    console.log(actualState);
+    const fixButtonCombinedProduct = getFixButtonCombinedProduct(actualState);
+    await ctx.reply(
+      "Choose product that you want to fix or press Done to calculate",
+      fixButtonCombinedProduct
+    );
+    return ctx.wizard.selectStep(fixingAndFinalStep);
   }
 
   const create = isCreateButton(ctx);
@@ -284,7 +282,7 @@ export async function productOptions(ctx: Scenes.WizardContext) {
   const documentId = foodElement!._id!;
 
   actualState.products[documentId] = foodElement!;
-  actualState.products[documentId].name = actualState.actualProductName;
+  actualState.products[documentId].name = foodElement!.name;
   actualState.products[documentId].mass = actualState.actualProductMass;
 
   actualState.CombinedMass += actualState.actualProductMass;
@@ -344,30 +342,6 @@ export async function replaceAddOrIgnore(ctx: Scenes.WizardContext) {
   }
 }
 
-////// waiting for "yes" or "no" answer of fixing something or finish the dialogue
-export async function isFixingSomethingOrFinish(ctx: Scenes.WizardContext) {
-  const actualState = ctx.wizard.state as CombinedProduct;
-  const succesButton = getYesOrNoButton(ctx);
-
-  await ctx.answerCbQuery();
-
-  await ctx.reply(
-    "Choose prodct that you want to fix or press Done to calculate"
-  );
-
-  if (succesButton) {
-    const fixButtonCombinedProduct = getFixButtonCombinedProduct(actualState);
-    await ctx.reply("Choose what you want ot fix", fixButtonCombinedProduct);
-    return ctx.wizard.selectStep(fixingAndFinalStep);
-  }
-
-  const finalNutrition = combineAllNutrition(actualState);
-
-  const updateCheck = (ctx.scene.state as DialogueState).updateProduct;
-
-  await createOrUpdateProductInProductBase(finalNutrition, updateCheck, ctx);
-}
-
 // fixing something and then finish the dialogue
 export async function fixingAndFinal(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
@@ -377,6 +351,16 @@ export async function fixingAndFinal(ctx: Scenes.WizardContext) {
   await ctx.answerCbQuery();
 
   const actualState = ctx.wizard.state as CombinedProduct;
+
+  if (ctx.callbackQuery.data === "done_action") {
+    const finalNutrition = combineAllNutrition(actualState);
+
+    const updateCheck = (ctx.scene.state as DialogueState).updateProduct;
+
+    await createOrUpdateProductInProductBase(finalNutrition, updateCheck, ctx);
+    return;
+  }
+
   const documentIdFromCallBack = ctx.callbackQuery.data;
   const productName = getProductNameById(actualState, documentIdFromCallBack);
 
@@ -404,7 +388,12 @@ export async function fixingMassOfProduct(ctx: Scenes.WizardContext) {
 
   updateProductMassAndName(actualState, productName, mass);
 
+  const fixButtonCombinedProduct = getFixButtonCombinedProduct(actualState);
+
   await ctx.reply("Product state succsesfully updated");
-  await ctx.reply("Do you want to fix something else?", yesOrNoButton);
-  return ctx.wizard.selectStep(isFixingSomethingOrFinishStep);
+  await ctx.reply(
+    "Choose product that you want to fix or press Done to calculate",
+    fixButtonCombinedProduct
+  );
+  return ctx.wizard.selectStep(fixingAndFinalStep);
 }
