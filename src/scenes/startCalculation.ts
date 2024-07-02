@@ -7,7 +7,6 @@ import { sceneButtons } from "../utils/buttons";
 export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
   "START_CALCULATION",
 
-  //start dialogue: create new user or check existance
   async (ctx) => {
     const userId = ctx.from!.id;
     const userName = ctx.from!.username!;
@@ -23,14 +22,12 @@ export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
     return ctx.wizard.next();
   },
 
-  // select scene
   async (ctx) => {
     if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
       return;
     }
 
     const fromStartingScene = { fromStartingScene: true } as DialogueState;
-
     const callBackData = ctx.callbackQuery.data;
 
     await ctx.answerCbQuery();

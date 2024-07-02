@@ -2,7 +2,6 @@ import { Middleware, Scenes } from "telegraf";
 
 import { CombinedProduct, DialogueState } from "../utils/models";
 import {
-  getProductNameAndMass,
   isValidNumberString,
   replaceCommaToDot,
   getProductNameById,
@@ -29,7 +28,6 @@ import {
   isCreateButton,
   getChooseProductButton,
 } from "../utils/buttons";
-import { FoodElement } from "../utils/models";
 
 export const createCombinedProductSteps: Middleware<Scenes.WizardContext>[] = [
   startingDialogue,
@@ -84,7 +82,6 @@ export const createCombinedProduct =
     ...createCombinedProductSteps
   );
 
-// start of the dialogue
 export async function startingDialogue(ctx: Scenes.WizardContext) {
   (ctx.wizard.state as CombinedProduct).tgId = ctx.from!.id;
   const fromStartingScene2 = await handleFromStartingScene(ctx);
@@ -97,16 +94,13 @@ export async function startingDialogue(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(waitingForCombinedProductNameStep);
 }
 
-// waiting of the name of the combined product
 export async function waitingForCombinedProductName(ctx: Scenes.WizardContext) {
   if (!ctx.message || !("text" in ctx.message)) {
     return;
   }
 
   const actualState = ctx.wizard.state as CombinedProduct;
-
   const tgId = actualState.tgId;
-
   const combinedProductName = ctx.message.text.trim();
 
   if (ctx.message.text === undefined) {
@@ -139,7 +133,6 @@ export async function waitingForCombinedProductName(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(waitingForNameAndMassOfProductStep);
 }
 
-// waiting for "yes" or "no" answer of replace the product
 export async function isReplaceTheProduct(ctx: Scenes.WizardContext) {
   const succesButton = getYesOrNoButton(ctx);
   await ctx.answerCbQuery(undefined);
@@ -159,7 +152,6 @@ export async function isReplaceTheProduct(ctx: Scenes.WizardContext) {
   return ctx.scene.enter("START_CALCULATION");
 }
 
-// waiting for the name and mass of the product
 export async function waitingForNameAndMassOfProduct(
   ctx: Scenes.WizardContext
 ) {
@@ -191,28 +183,25 @@ export async function waitingForNameAndMassOfProduct(
     return;
   }
 
-  const inputProduct = ctx.message.text;
+  const productNameAndMass = IsInputStringAndNumber(ctx.message.text);
 
-  const productNameAndMass = IsInputStringAndNumber(inputProduct);
   if (productNameAndMass === null) {
     await ctx.reply(
       "Wrong, write a product name and mass (in gram) in this format: NAME MASS (example: apple 100, red apple 100, sweet red apple 100 etc.)"
     );
     return;
   }
-  const productName = productNameAndMass[0];
-  const productMass = productNameAndMass[1];
 
-  actualState.actualProductName = productName;
+  actualState.actualProductName = productNameAndMass[0];
   const tgId = actualState.tgId;
   actualState.checkForCombined = true;
 
   const existanceOfProductInState = doesProductExistInState(
-    productName,
+    actualState.actualProductName,
     actualState
   );
 
-  actualState.actualProductMass = productMass;
+  actualState.actualProductMass = productNameAndMass[1];
 
   if (existanceOfProductInState) {
     await ctx.reply(
@@ -226,15 +215,18 @@ export async function waitingForNameAndMassOfProduct(
     return ctx.wizard.selectStep(replaceAddOrIgnoreStep);
   }
 
-  const searchResults = await findProductInProductBase(productName, tgId);
+  const searchResults = await findProductInProductBase(
+    actualState.actualProductName,
+    tgId
+  );
 
   if (searchResults === null) {
     await ctx.reply("This product does not exist in product database");
     await ctx.reply(
       `
-    Create - to create ${productName} in product database;
+    Create - to create ${actualState.actualProductName} in product database;
     Done - to calculate nutrition of ${actualState.CombinedName};
-    Or just enter the name and mass (in gram) of the next product to combine in this format: NAME MASS, to ignore ${productName}`,
+    Or just enter the name and mass (in gram) of the next product to combine in this format: NAME MASS, to ignore ${actualState.actualProductName}`,
       createOrDoneButton
     );
     return ctx.wizard.selectStep(waitingForNameAndMassOfProductStep);
@@ -242,14 +234,11 @@ export async function waitingForNameAndMassOfProduct(
 
   if (searchResults.length === 1) {
     const foodElement = searchResults[0];
-
     const documentId = foodElement._id!;
-
     actualState.products[documentId] = foodElement;
-    actualState.products[documentId].name = productName;
-    actualState.products[documentId].mass = productMass;
-
-    actualState.CombinedMass += productMass;
+    actualState.products[documentId].name = actualState.actualProductName;
+    actualState.products[documentId].mass = actualState.actualProductMass;
+    actualState.CombinedMass += actualState.actualProductMass;
 
     await ctx.reply(
       `Enter the name and mass (in gram) of the next product to combine in this format: NAME MASS press Done to calculate nutrition`,
@@ -280,11 +269,9 @@ export async function productOptions(ctx: Scenes.WizardContext) {
   );
 
   const documentId = foodElement!._id!;
-
   actualState.products[documentId] = foodElement!;
   actualState.products[documentId].name = foodElement!.name;
   actualState.products[documentId].mass = actualState.actualProductMass;
-
   actualState.CombinedMass += actualState.actualProductMass;
 
   await ctx.reply(
@@ -294,7 +281,6 @@ export async function productOptions(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(waitingForNameAndMassOfProductStep);
 }
 
-// replace, add or ingore product in state
 export async function replaceAddOrIgnore(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
@@ -342,7 +328,6 @@ export async function replaceAddOrIgnore(ctx: Scenes.WizardContext) {
   }
 }
 
-// fixing something and then finish the dialogue
 export async function fixingAndFinal(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
@@ -363,14 +348,12 @@ export async function fixingAndFinal(ctx: Scenes.WizardContext) {
 
   const documentIdFromCallBack = ctx.callbackQuery.data;
   const productName = getProductNameById(actualState, documentIdFromCallBack);
-
   actualState.actualProductName = productName;
 
   await ctx.reply("Write a mass of product");
   return ctx.wizard.selectStep(fixingMassOfProductStep);
 }
 
-//fixing mass of product
 export async function fixingMassOfProduct(ctx: Scenes.WizardContext) {
   if (!ctx.message || !("text" in ctx.message)) {
     return;

@@ -62,7 +62,6 @@ export const costOfOneProteinsGram =
     ...costOfOneProteinsGramSteps
   );
 
-//start dialogue
 export async function startingDialogue(ctx: Scenes.WizardContext) {
   await ctx.reply("Name of product");
   return ctx.wizard.selectStep(nameOfProductStep);
@@ -81,7 +80,6 @@ export async function nameOfProduct(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(perHundredOrCustomMassStep);
 }
 
-//choose scope of mass of nutrition
 export async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
@@ -99,7 +97,6 @@ export async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
   }
 }
 
-//if custom mass
 export async function customMass(ctx: Scenes.WizardContext) {
   if (
     !ctx.message ||
@@ -123,7 +120,6 @@ export async function customMass(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(proteinPerSelectedMassStep);
 }
 
-//enter protein per selected mass
 export async function proteinPerSelectedMass(ctx: Scenes.WizardContext) {
   if (
     !ctx.message ||
@@ -142,7 +138,6 @@ export async function proteinPerSelectedMass(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(totalMassOfProductStep);
 }
 
-//enter total mass of product
 export async function totalMassOfProduct(ctx: Scenes.WizardContext) {
   if (
     !ctx.message ||
@@ -161,7 +156,6 @@ export async function totalMassOfProduct(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(costOfProductStep);
 }
 
-//enter cost of product
 export async function costOfProduct(ctx: Scenes.WizardContext) {
   if (!ctx.message || !("text" in ctx.message)) {
     await ctx.reply(
@@ -210,7 +204,6 @@ export async function costOfProduct(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(fixingOrFinalStep);
 }
 
-//edit something?
 export async function fixingOrFinal(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;

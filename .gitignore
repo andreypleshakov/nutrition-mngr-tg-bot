@@ -3,3 +3,4 @@ node_modules/
 .env.prod
 nutrition-manager-bot.json
 nutrition-manager-test.json
+.vscode

@@ -114,10 +114,8 @@ export async function customDateForStatistic(ctx: Scenes.WizardContext) {
 
   const customDateString = ctx.message.text;
   const startDate = new Date(customDateString);
-
   const endDate = new Date(startDate);
   endDate.setDate(startDate.getDate() + 1);
-
   (ctx.wizard.state as DailyFood).dateOfConsumption = startDate;
   const typeOfStatisticButton = getTypeOfStatisticButton();
 
@@ -141,7 +139,6 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
   const tgId = (ctx.wizard.state as DailyFood).tgId;
   let checkForList = (ctx.wizard.state as DialogueState).listOfProducts;
   let deleteConsumption = (ctx.wizard.state as DialogueState).deleteConsumption;
-
   const startDate = (ctx.wizard.state as DailyFood).dateOfConsumption;
   const endDate = new Date(startDate);
   endDate.setDate(startDate.getDate() + 1);

@@ -6,6 +6,7 @@ import {
   calculateDailyConsumption,
   isValidDateFormat,
   findProductInProductBase,
+  IsInputStringAndNumber,
 } from "../utils/utils";
 import {
   getChooseProductButton,
@@ -49,7 +50,6 @@ export const addConsumption = new Scenes.WizardScene<Scenes.WizardContext>(
   ...addConsumptionSteps
 );
 
-// start of the dialogue
 export async function startingDialogue(ctx: Scenes.WizardContext) {
   (ctx.wizard.state as DailyFood).tgId = ctx.from!.id;
 
@@ -67,7 +67,6 @@ export async function startingDialogue(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(todayOrCustomDateStep);
 }
 
-//today or custom day
 export async function todayOrCustomDate(ctx: Scenes.WizardContext) {
   if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
     return;
@@ -78,17 +77,16 @@ export async function todayOrCustomDate(ctx: Scenes.WizardContext) {
 
   if (callBackData === "today") {
     (ctx.wizard.state as DailyFood).dateOfConsumption = new Date();
-
     await ctx.reply(
       "Enter product's name and mass (in gram) in this format: NAME MASS (example: apple 100/red apple 0.9/sweet red apple 100/etc.)"
     );
     return ctx.wizard.selectStep(waitingForNameAndMassOfProductStep);
   }
+
   await ctx.reply("Enter date that you require in this format YYYY-MM-DD");
   return ctx.wizard.selectStep(customDateStep);
 }
 
-//custom date
 export async function customDate(ctx: Scenes.WizardContext) {
   if (!ctx.message || !("text" in ctx.message)) {
     return;
@@ -110,7 +108,6 @@ export async function customDate(ctx: Scenes.WizardContext) {
   return ctx.wizard.selectStep(waitingForNameAndMassOfProductStep);
 }
 
-// waiting for name and mass of product
 export async function waitingForNameAndMassOfProduct(
   ctx: Scenes.WizardContext
 ) {
@@ -127,45 +124,24 @@ export async function waitingForNameAndMassOfProduct(
     return;
   }
 
-  const inputProduct = ctx.message.text.trim();
+  const productNameAndMass = IsInputStringAndNumber(ctx.message.text);
 
-  // convert string of input to array of strings
-  const partsOfInput = inputProduct.split(" ");
-
-  // check length of array
-  if (partsOfInput.length < 2) {
-    await ctx.reply(
-      "Wrong, enter product's name and mass (in gram) in this format: NAME MASS (example: apple 100/red apple 0.9/sweet red apple 100/etc.)"
-    );
-    return;
-  }
-
-  // convert string to number and replace comma by dot
-  const stringMass = partsOfInput.pop();
-  const correctedMass = stringMass!.replace(",", ".");
-  const productMass = parseFloat(correctedMass);
-
-  // convert array of strings to string (product name)
-  const productName = partsOfInput.join(" ");
-
-  // check format of input
-  if (!productName || !productMass || isNaN(Number(productMass))) {
+  if (productNameAndMass === null) {
     await ctx.reply(
       "Wrong, write a product name and mass (in gram) in this format: NAME MASS (example: apple 100, red apple 100, sweet red apple 100 etc.)"
     );
     return;
   }
 
-  actualState.name = productName;
-  actualState.mass = productMass;
+  actualState.name = productNameAndMass[0];
+  actualState.mass = productNameAndMass[1];
   const tgId = actualState.tgId;
-
-  const searchResults = await findProductInProductBase(productName, tgId);
+  const searchResults = await findProductInProductBase(actualState.name, tgId);
 
   if (searchResults === null) {
     await ctx.reply("This product does not exist in product database");
     await ctx.reply(
-      `Create - to create ${productName} in product database\n
+      `Create - to create ${actualState.name} in product database\n
         Or try again and just enter the name of product`,
       createButton
     );
@@ -174,13 +150,12 @@ export async function waitingForNameAndMassOfProduct(
 
   if (searchResults.length === 1) {
     const foodElement = searchResults[0];
-    foodElement.mass = productMass;
+    foodElement.mass = actualState.mass;
     await calculateDailyConsumption(foodElement, actualState, ctx);
     return;
   }
 
   actualState.arrayOfProducts = searchResults;
-
   const chooseProductButton = getChooseProductButton(searchResults);
   await ctx.reply("Did you mean one of these products?", chooseProductButton);
 

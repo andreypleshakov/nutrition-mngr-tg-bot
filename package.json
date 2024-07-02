@@ -14,24 +14,23 @@
   "dependencies": {
     "@types/body-parser": "^1.19.5",
     "@types/express": "^4.17.21",
-    "ajv": "^8.13.0",
+    "ajv": "^8.16.0",
     "assert-ts": "^0.3.4",
     "body-parser": "^1.20.2",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "google-auth-library": "^9.9.0",
-    "google-spreadsheet": "^4.1.1",
-    "mongodb": "^6.6.0",
-    "mongoose": "^8.3.3",
-    "pnpm": "^9.0.6",
+    "google-auth-library": "^9.11.0",
+    "mongodb": "^6.8.0",
+    "mongoose": "^8.4.4",
+    "pnpm": "^9.4.0",
     "telegraf": "^4.16.3",
     "telegram-webapps-types": "^1.0.5",
-    "typescript": "^5.4.5"
+    "typescript": "^5.5.3"
   },
   "devDependencies": {
     "@telegraf/types": "^6.9.1",
-    "@types/node": "^20.12.8",
-    "nodemon": "^3.1.0",
+    "@types/node": "^20.14.9",
+    "nodemon": "^3.1.4",
     "ts-node": "^10.9.2"
   },
   "packageManager": "pnpm@8.15.4+sha1.c85a4305534f76d461407b59277b954bac97b5c4"
