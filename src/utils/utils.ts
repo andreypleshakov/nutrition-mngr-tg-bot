@@ -202,7 +202,6 @@ export function isValidNumberString(text: string): boolean {
 export function combineAllNutrition(
   combinedProduct: CombinedProduct
 ): FoodElement {
-
   let resultProduct: FoodElement = {
     name: combinedProduct.CombinedName,
     mass: combinedProduct.CombinedMass,
@@ -491,7 +490,9 @@ export async function calculateDailyConsumption(
 
     const newDate = new dailyFoodBase(nutritionDetails);
     await newDate.save();
-    await ctx.reply("Product is calculated and added to daily statistics");
+    await ctx.reply(
+      `Product ${productName} added to daily consumption statistics`
+    );
     await ctx.scene.enter("START_CALCULATION");
   }
   const nutritionDetails = {
@@ -511,7 +512,9 @@ export async function calculateDailyConsumption(
 
   const newDate = new dailyFoodBase(nutritionDetails);
   await newDate.save();
-  await ctx.reply("Product is calculated and added to daily statistics");
+  await ctx.reply(
+    `Product ${productName} added to daily consumption statistics`
+  );
   await ctx.scene.enter("START_CALCULATION");
 }
 
@@ -619,10 +622,9 @@ export async function existanceOfUser(
   return false;
 }
 
-export async function getOrDeleteConsumptionStatisticByDateAnTgId(
+export async function getConsumptionStatisticByDateAnTgId(
   tgId: number,
   checkForList: boolean,
-  deleteConsumption: boolean,
   startDate: Date,
   endDate: Date,
   ctx: Scenes.WizardContext
@@ -653,19 +655,6 @@ export async function getOrDeleteConsumptionStatisticByDateAnTgId(
     return;
   }
 
-  if (deleteConsumption) {
-    const buttons = foods.map((food) => [
-      Markup.button.callback(
-        `${food.name}: ${food.mass}g`,
-        `${food._id.toString()}`
-      ),
-    ]);
-    await ctx.reply(
-      "Choose what you want to delete",
-      Markup.inlineKeyboard(buttons)
-    );
-    return;
-  }
   const totals = foods.reduce(
     (accumulator, food) => {
       accumulator.mass += food.mass;
@@ -743,7 +732,43 @@ Unsaturated fats: ${totals.unsatFatPercent}%`;
   ctx.scene.enter("START_CALCULATION");
   return;
 }
+export async function deleteConsumptionStatisticByDateAnTgId(
+  startDate: Date,
+  endDate: Date,
+  tgId: number
+) {
+  const filter = {
+    dateOfConsumption: { $gte: startDate, $lt: endDate },
+    tgId: tgId,
+  };
 
-export async function deleteProduct(id: string) {
-  const result = await dailyFoodBase.deleteOne({ _id: id });
+  const foods = await dailyFoodBase.find(filter);
+
+  const updatedFoods: FoodElement[] = foods.map(
+    ({
+      _id,
+      name,
+      mass,
+      kcal,
+      protein,
+      saturated_fat,
+      unsaturated_fat,
+      totalFat,
+      carbs,
+      tgId,
+    }) => ({
+      _id,
+      name,
+      mass,
+      kcal,
+      protein,
+      saturated_fat,
+      unsaturated_fat,
+      totalFat,
+      carbs,
+      tgId,
+    })
+  );
+
+  return updatedFoods;
 }

@@ -22,6 +22,7 @@ export interface DialogueState extends FoodElement {
   fromCombinedProduct: boolean;
   fromFixingStep: boolean;
   fromStartingScene: boolean;
+  fromPreparationToDelete: boolean
 
   checkForCombined: boolean;
 
@@ -45,6 +46,7 @@ export interface DailyFood extends FoodElement {
   dateOfConsumption: Date;
 
   arrayOfProducts: FoodElement[];
+  arrayForDelete: string[];
   objectProduct: {};
 }
 

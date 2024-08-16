@@ -1,15 +1,16 @@
 import { Middleware, Scenes, Markup } from "telegraf";
 import {
   handleFromStartingScene,
-  getOrDeleteConsumptionStatisticByDateAnTgId,
+  getConsumptionStatisticByDateAnTgId,
   isValidDateFormat,
-  deleteProduct,
+  deleteConsumptionStatisticByDateAnTgId,
 } from "../utils/utils";
-import { DialogueState, DailyFood } from "../utils/models";
+import { DialogueState, DailyFood, FoodElement } from "../utils/models";
 import {
   getTypeOfStatisticButton,
   todayOrCustomDateButton,
 } from "../utils/buttons";
+import { dailyFoodBase } from "../utils/schemas";
 
 export const checkOrDeleteConsumptionStatisticSteps: Middleware<Scenes.WizardContext>[] =
   [
@@ -149,10 +150,10 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
     case "general-daily-statistic":
       checkForList = false;
       deleteConsumption = false;
-      await getOrDeleteConsumptionStatisticByDateAnTgId(
+      await getConsumptionStatisticByDateAnTgId(
         tgId,
         checkForList,
-        deleteConsumption,
+
         startDate,
         endDate,
         ctx
@@ -161,10 +162,10 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
     case "list-of-consumed-products":
       checkForList = true;
       deleteConsumption = false;
-      await getOrDeleteConsumptionStatisticByDateAnTgId(
+      await getConsumptionStatisticByDateAnTgId(
         tgId,
         checkForList,
-        deleteConsumption,
+
         startDate,
         endDate,
         ctx
@@ -173,14 +174,34 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
     case "delete-consumed-product":
       checkForList = false;
       deleteConsumption = true;
-      await getOrDeleteConsumptionStatisticByDateAnTgId(
-        tgId,
-        checkForList,
-        deleteConsumption,
+      const foods = await deleteConsumptionStatisticByDateAnTgId(
         startDate,
         endDate,
-        ctx
+        tgId
       );
+
+      if (!foods || foods.length === 0) {
+        await ctx.reply("You don't have any consumption records in this day");
+        ctx.scene.enter("START_CALCULATION");
+        return;
+      }
+
+      (ctx.wizard.state as DailyFood).arrayOfProducts = foods;
+
+      const buttons = (ctx.wizard.state as DailyFood).arrayOfProducts.map(
+        (food) => [
+          Markup.button.callback(
+            `${food.name}: ${food.mass}g`,
+            `${food._id!.toString()}`
+          ),
+        ]
+      );
+
+      await ctx.reply(
+        "Choose what you want to delete or press Done to complete your delete",
+        Markup.inlineKeyboard(buttons)
+      );
+
       return ctx.wizard.selectStep(deleteConsumedProductStep);
   }
 }
@@ -190,11 +211,63 @@ export async function deleteConsumedProduct(ctx: Scenes.WizardContext) {
     return;
   }
 
+  let arrayOfProducts = (ctx.wizard.state as DailyFood).arrayOfProducts;
+
+  let arrayForDelete = (ctx.wizard.state as DailyFood).arrayForDelete;
+
+  if (ctx.callbackQuery.data === "Done") {
+    await ctx.answerCbQuery();
+
+    const filter = (ctx.wizard.state as DailyFood).arrayForDelete;
+
+    await dailyFoodBase.deleteMany({ _id: { $in: filter } });
+
+    await ctx.reply(
+      "Product(s) succesfully deleted from your daily consumption list "
+    );
+    return ctx.scene.enter("START_CALCULATION");
+  }
+
+  if ((ctx.wizard.state as DialogueState).fromPreparationToDelete !== true) {
+    arrayForDelete = [];
+  }
+
   await ctx.answerCbQuery();
 
-  await deleteProduct(ctx.callbackQuery.data);
-  await ctx.reply(
-    "Product was succesfully deleted from your daily consumption list "
+  let targetId = ctx.callbackQuery.data;
+
+  const foundObject = arrayOfProducts.find(
+    (obj) => obj._id!.toString() === targetId
   );
-  return ctx.scene.enter("START_CALCULATION");
+
+  arrayForDelete.push(foundObject!._id!);
+
+  (ctx.wizard.state as DailyFood).arrayForDelete = arrayForDelete;
+
+  const index = arrayOfProducts.findIndex(
+    (obj) => obj._id!.toString() === targetId
+  );
+
+  arrayOfProducts.splice(index, 1);
+
+  (ctx.wizard.state as DailyFood).arrayOfProducts = arrayOfProducts;
+
+  (ctx.wizard.state as DialogueState).fromPreparationToDelete = true;
+
+  const buttons = (ctx.wizard.state as DailyFood).arrayOfProducts.map(
+    (food) => [
+      Markup.button.callback(
+        `${food.name}: ${food.mass}g`,
+        `${food._id!.toString()}`
+      ),
+    ]
+  );
+
+  if ((ctx.wizard.state as DialogueState).fromPreparationToDelete === true) {
+    buttons.push([Markup.button.callback("Done", "Done")]);
+  }
+
+  await ctx.editMessageReplyMarkup(Markup.inlineKeyboard(buttons).reply_markup);
+
+  return ctx.wizard.selectStep(deleteConsumedProductStep);
 }
