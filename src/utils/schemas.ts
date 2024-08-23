@@ -19,6 +19,7 @@ export const dailyFoodSchema = new Schema<DailyFood>({
   totalFat: { type: Number, required: true },
   carbs: { type: Number, required: true },
   tgId: { type: Number, required: true },
+  fiber: { type: Number, required: true },
 });
 
 export const dailyFoodBase = model<DailyFood>("dailyFoodBase", dailyFoodSchema);
@@ -32,6 +33,7 @@ const productBaseSchema = new Schema<FoodElement>({
   unsaturated_fat: { type: Number, required: true },
   carbs: { type: Number, required: true },
   tgId: { type: Number, required: true },
+  fiber: { type: Number, default: 0, required: true },
 });
 
 productBaseSchema.index({ name: 1, telegramId: 1 }, { unique: true });

@@ -13,6 +13,7 @@ export interface FoodElement extends users {
   saturated_fat: number;
   unsaturated_fat: number;
   carbs: number;
+  fiber: number;
 }
 
 export interface DialogueState extends FoodElement {
@@ -22,7 +23,7 @@ export interface DialogueState extends FoodElement {
   fromCombinedProduct: boolean;
   fromFixingStep: boolean;
   fromStartingScene: boolean;
-  fromPreparationToDelete: boolean
+  fromPreparationToDelete: boolean;
 
   checkForCombined: boolean;
 

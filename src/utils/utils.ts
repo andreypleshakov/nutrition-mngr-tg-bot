@@ -7,7 +7,7 @@ import {
 } from "./models";
 import { userBase, dailyFoodBase, productBase } from "./schemas";
 import { Scenes, Markup } from "telegraf";
-import { fixingSomethingAndFinalStep } from "../scenes/createProduct";
+// import { fixingSomethingAndFinalStep } from "../scenes/createProduct";
 import { getfixButtonProductBase } from "./buttons";
 
 export function calculationOfCostProtein(actualState: CostOfProtein): number {
@@ -212,6 +212,7 @@ export function combineAllNutrition(
     saturated_fat: 0,
     unsaturated_fat: 0,
     carbs: 0,
+    fiber: 0,
 
     tgId: combinedProduct.tgId,
   };
@@ -225,6 +226,7 @@ export function combineAllNutrition(
     resultProduct.saturated_fat += product.saturated_fat * product.mass;
     resultProduct.unsaturated_fat += product.unsaturated_fat * product.mass;
     resultProduct.carbs += product.carbs * product.mass;
+    resultProduct.fiber += product.fiber * product.mass;
   });
 
   const perGramResultProduct = resultProduct;
@@ -240,6 +242,8 @@ export function combineAllNutrition(
     perGramResultProduct.unsaturated_fat / perGramResultProduct.mass;
   perGramResultProduct.carbs =
     perGramResultProduct.carbs / perGramResultProduct.mass;
+  perGramResultProduct.fiber =
+    perGramResultProduct.fiber / perGramResultProduct.mass;
 
   return perGramResultProduct;
 }
@@ -348,7 +352,7 @@ export async function handleFromFixingStep(
       "Choose what you want ot fix or press done to create product",
       fixButtonProductBase
     );
-    ctx.wizard.selectStep(fixingSomethingAndFinalStep);
+    // ctx.wizard.selectStep(fixingSomethingAndFinalStep);
     return true;
   }
   return false;
@@ -564,6 +568,7 @@ export async function createOrUpdateProductInProductBase(
     saturated_fat: roundToThree(foodElement.saturated_fat),
     unsaturated_fat: roundToThree(foodElement.unsaturated_fat),
     carbs: roundToThree(foodElement.carbs),
+    fiber: roundToThree(foodElement.fiber),
 
     proteinPercent: calculatePercentageOfNutrient(
       foodElement.protein,
@@ -664,6 +669,7 @@ export async function getConsumptionStatisticByDateAnTgId(
       accumulator.saturated_fat += food.saturated_fat;
       accumulator.unsaturated_fat += food.unsaturated_fat;
       accumulator.carbs += food.carbs;
+      accumulator.fiber += food.fiber;
 
       return accumulator;
     },
@@ -680,6 +686,7 @@ export async function getConsumptionStatisticByDateAnTgId(
       proteinPercent: 0,
       totalFatPercent: 0,
       carbPercent: 0,
+      fiber: 0,
 
       satFatPercent: 0,
       unsatFatPercent: 0,
@@ -716,6 +723,7 @@ Nutritions in gram:
 Proteins: ${Math.round(totals.protein)}g
 Total Fat: ${Math.round(totals.totalFat)}g
 Carbohydrates: ${Math.round(totals.carbs)}g
+Fiber: ${Math.round(totals.fiber)}g
 -------------------
 Nutritions in perecents:
 
@@ -755,6 +763,7 @@ export async function deleteConsumptionStatisticByDateAnTgId(
       unsaturated_fat,
       totalFat,
       carbs,
+      fiber,
       tgId,
     }) => ({
       _id,
@@ -766,6 +775,7 @@ export async function deleteConsumptionStatisticByDateAnTgId(
       unsaturated_fat,
       totalFat,
       carbs,
+      fiber,
       tgId,
     })
   );

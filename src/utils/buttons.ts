@@ -60,6 +60,7 @@ export function getfixButtonProductBase(
       ),
     ],
     [Markup.button.callback(`Carbohydrates: ${actualState.carbs}`, "carbs")],
+    [Markup.button.callback(`Fiber: ${actualState.fiber}`, "fiber")],
     [Markup.button.callback("Done", "done")],
   ]);
 }

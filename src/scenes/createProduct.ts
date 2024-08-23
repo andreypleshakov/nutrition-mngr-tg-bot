@@ -28,6 +28,7 @@ export const createProductSteps: Middleware<Scenes.WizardContext>[] = [
   perHundredOrCustomMass,
   customMass,
   totalFatPerGram,
+  fiberPerGram,
 ];
 
 export const startingDialogueStep = createProductSteps.findIndex(
@@ -78,6 +79,9 @@ export const totalFatPerGramStep = createProductSteps.findIndex(
   (scene) => scene === totalFatPerGram
 );
 
+const fiberPerGramStep = createProductSteps.findIndex(
+  (scene) => scene === fiberPerGram
+);
 //////////////////////////////////////
 
 export const createProduct = new Scenes.WizardScene<Scenes.WizardContext>(
@@ -323,7 +327,7 @@ export async function unsaturatedFatPerGram(ctx: Scenes.WizardContext) {
     return;
   }
 
-  await ctx.reply(`Carbohydrates fats per ${customMass} gram`);
+  await ctx.reply(`Carbohydrates per ${customMass} gram`);
   return ctx.wizard.selectStep(carbohydratesPerGramStep);
 }
 
@@ -337,8 +341,31 @@ export async function carbohydratesPerGram(ctx: Scenes.WizardContext) {
     return;
   }
 
+  const customMass = (ctx.wizard.state as DialogueState).customMass;
   const actualState = ctx.wizard.state as FoodElement;
   actualState.carbs = replaceCommaToDot(ctx.message.text);
+  const fromFixingStep = await handleFromFixingStep(ctx);
+
+  if (fromFixingStep) {
+    return;
+  }
+
+  await ctx.reply(`Fiber per ${customMass} gram`);
+  return ctx.wizard.selectStep(fiberPerGramStep);
+}
+
+export async function fiberPerGram(ctx: Scenes.WizardContext) {
+  if (
+    !ctx.message ||
+    !("text" in ctx.message) ||
+    !isValidNumberString(ctx.message.text)
+  ) {
+    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
+    return;
+  }
+
+  const actualState = ctx.wizard.state as FoodElement;
+  actualState.fiber = replaceCommaToDot(ctx.message.text);
   const fromFixingStep = await handleFromFixingStep(ctx);
 
   if (fromFixingStep) {
@@ -389,6 +416,9 @@ export async function fixingSomethingAndFinal(ctx: Scenes.WizardContext) {
     case "carbs":
       await ctx.reply(`Carbohydrates per ${customMass} gram`);
       return ctx.wizard.selectStep(carbohydratesPerGramStep);
+    case "fiber":
+      await ctx.reply(`Fiber per ${customMass} gram`);
+      return ctx.wizard.selectStep(fiberPerGramStep);
     case "done":
       type NutrientKeys = Exclude<
         keyof FoodElement,
@@ -402,6 +432,7 @@ export async function fixingSomethingAndFinal(ctx: Scenes.WizardContext) {
         "saturated_fat",
         "unsaturated_fat",
         "carbs",
+        "fiber",
       ];
 
       nutrientKeys.forEach((nutrientKey) => {
