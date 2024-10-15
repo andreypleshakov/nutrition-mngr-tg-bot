@@ -43,8 +43,6 @@ export const productOptionsStep = addConsumptionSteps.findIndex(
   (scene) => scene === productOptions
 );
 
-//////////////////////////////////////
-
 export const addConsumption = new Scenes.WizardScene<Scenes.WizardContext>(
   "ADD_CONSUMPTION",
   ...addConsumptionSteps
@@ -136,7 +134,10 @@ export async function waitingForNameAndMassOfProduct(
   actualState.name = productNameAndMass[0];
   actualState.mass = productNameAndMass[1];
   const tgId = actualState.tgId;
-  const searchResults = await findProductInProductBase(actualState.name, tgId);
+  const searchResults = await findProductInProductBase(
+    actualState.name
+    // tgId
+  );
 
   if (searchResults === null) {
     await ctx.reply("This product does not exist in product database");
@@ -151,7 +152,7 @@ export async function waitingForNameAndMassOfProduct(
   if (searchResults.length === 1) {
     const foodElement = searchResults[0];
     foodElement.mass = actualState.mass;
-    await calculateDailyConsumption(foodElement, actualState, ctx);
+    await calculateDailyConsumption(foodElement, actualState, ctx, tgId);
     return;
   }
 
@@ -169,6 +170,8 @@ export async function productOptions(ctx: Scenes.WizardContext) {
 
   const actualState = ctx.wizard.state as DailyFood;
 
+  const tgId = actualState.tgId;
+
   const callBackData = ctx.callbackQuery.data;
   await ctx.answerCbQuery();
 
@@ -176,5 +179,5 @@ export async function productOptions(ctx: Scenes.WizardContext) {
     (product) => product._id!.toString() === callBackData
   );
 
-  await calculateDailyConsumption(foodElement!, actualState, ctx);
+  await calculateDailyConsumption(foodElement!, actualState, ctx, tgId);
 }

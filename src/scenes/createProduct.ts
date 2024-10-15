@@ -82,7 +82,6 @@ export const totalFatPerGramStep = createProductSteps.findIndex(
 const fiberPerGramStep = createProductSteps.findIndex(
   (scene) => scene === fiberPerGram
 );
-//////////////////////////////////////
 
 export const createProduct = new Scenes.WizardScene<Scenes.WizardContext>(
   "CREATE_PRODUCT",
@@ -107,19 +106,22 @@ export async function waitingForProductName(ctx: Scenes.WizardContext) {
   const productName = actualState.name;
   const tgId = actualState.tgId;
 
-  const existance = await doesExistTheSameProductWithTgId(productName, tgId);
+  const fromFixingStep = await handleFromFixingStep(ctx);
+
+  if (fromFixingStep) {
+    return ctx.wizard.selectStep(fixingSomethingAndFinalStep);
+  }
+
+  const existance = await doesExistTheSameProductWithTgId(
+    productName
+    // tgId
+  );
 
   if (existance) {
     await ctx.reply("Product already exists");
     await ctx.reply("Do you want to update it?", yesOrNoButton);
 
     return ctx.wizard.selectStep(isUpdatingTheProductStep);
-  }
-
-  const fromFixingStep = await handleFromFixingStep(ctx);
-
-  if (fromFixingStep) {
-    return;
   }
 
   await ctx.reply(
@@ -207,7 +209,7 @@ export async function kcalsPerGram(ctx: Scenes.WizardContext) {
   const fromFixingStep = await handleFromFixingStep(ctx);
 
   if (fromFixingStep) {
-    return;
+    return ctx.wizard.selectStep(fixingSomethingAndFinalStep);
   }
 
   await ctx.reply(`Proteins per ${customMass} gram`);
@@ -231,7 +233,7 @@ export async function proteinsPerGram(ctx: Scenes.WizardContext) {
   const fromFixingStep = await handleFromFixingStep(ctx);
 
   if (fromFixingStep) {
-    return;
+    return ctx.wizard.selectStep(fixingSomethingAndFinalStep);
   }
 
   await ctx.reply(`Total fats per ${customMass} gram`);
@@ -254,7 +256,7 @@ export async function totalFatPerGram(ctx: Scenes.WizardContext) {
   const fromFixingStep = await handleFromFixingStep(ctx);
 
   if (fromFixingStep) {
-    return;
+    return ctx.wizard.selectStep(fixingSomethingAndFinalStep);
   }
 
   if (actualState.totalFat === 0) {
@@ -297,7 +299,7 @@ export async function saturatedFatPerGram(ctx: Scenes.WizardContext) {
   const fromFixingStep = await handleFromFixingStep(ctx);
 
   if (fromFixingStep) {
-    return;
+    return ctx.wizard.selectStep(fixingSomethingAndFinalStep);
   }
 
   await ctx.reply(`Carbohydrates per ${customMass} gram`);
@@ -324,7 +326,7 @@ export async function unsaturatedFatPerGram(ctx: Scenes.WizardContext) {
   const fromFixingStep = await handleFromFixingStep(ctx);
 
   if (fromFixingStep) {
-    return;
+    return ctx.wizard.selectStep(fixingSomethingAndFinalStep);
   }
 
   await ctx.reply(`Carbohydrates per ${customMass} gram`);
@@ -347,7 +349,7 @@ export async function carbohydratesPerGram(ctx: Scenes.WizardContext) {
   const fromFixingStep = await handleFromFixingStep(ctx);
 
   if (fromFixingStep) {
-    return;
+    return ctx.wizard.selectStep(fixingSomethingAndFinalStep);
   }
 
   await ctx.reply(`Fiber per ${customMass} gram`);
@@ -369,7 +371,7 @@ export async function fiberPerGram(ctx: Scenes.WizardContext) {
   const fromFixingStep = await handleFromFixingStep(ctx);
 
   if (fromFixingStep) {
-    return;
+    return ctx.wizard.selectStep(fixingSomethingAndFinalStep);
   }
 
   const fixButtonProductBase = getfixButtonProductBase(actualState);

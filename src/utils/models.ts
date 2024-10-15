@@ -16,6 +16,11 @@ export interface FoodElement extends users {
   fiber: number;
 }
 
+export interface ProductRaiting extends FoodElement {
+  kcalPerProtein: number;
+  kcalPerFiber: number;
+}
+
 export interface DialogueState extends FoodElement {
   updateProduct: boolean;
 

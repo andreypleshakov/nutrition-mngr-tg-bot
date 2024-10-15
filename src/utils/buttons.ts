@@ -34,6 +34,17 @@ export const yesOrNoButton = {
   },
 };
 
+export const typeOfRaing = {
+  reply_markup: {
+    inline_keyboard: [
+      [
+        { text: "Best protein source", callback_data: "best-protein" },
+        { text: "Best fiber source", callback_data: "best-fiber" },
+      ],
+    ],
+  },
+};
+
 export function getfixButtonProductBase(
   actualState: FoodElement
 ): ReturnType<typeof Markup.inlineKeyboard> {
@@ -101,10 +112,17 @@ export const sceneButtons = {
         },
       ],
 
+      // [
+      //   {
+      //     text: "Cost of one gram protein in product",
+      //     callback_data: "cost-of-protein",
+      //   },
+      // ],
+
       [
         {
-          text: "Cost of one gram protein in product",
-          callback_data: "cost-of-protein",
+          text: "Check best protein/fiber product",
+          callback_data: "best-protein-fiber",
         },
       ],
 

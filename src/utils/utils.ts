@@ -6,8 +6,7 @@ import {
   CostOfProtein,
 } from "./models";
 import { userBase, dailyFoodBase, productBase } from "./schemas";
-import { Scenes, Markup } from "telegraf";
-// import { fixingSomethingAndFinalStep } from "../scenes/createProduct";
+import { Scenes } from "telegraf";
 import { getfixButtonProductBase } from "./buttons";
 
 export function calculationOfCostProtein(actualState: CostOfProtein): number {
@@ -297,12 +296,12 @@ export function formatDate(date: Date): string | null {
 }
 
 export async function doesExistTheSameProductWithTgId(
-  productName: string,
-  tgId: number
+  productName: string
+  // tgId: number
 ): Promise<boolean> {
   const existance = await productBase.findOne({
     name: productName,
-    tgId: tgId,
+    // tgId: tgId,
   });
 
   if (existance) {
@@ -352,7 +351,6 @@ export async function handleFromFixingStep(
       "Choose what you want ot fix or press done to create product",
       fixButtonProductBase
     );
-    // ctx.wizard.selectStep(fixingSomethingAndFinalStep);
     return true;
   }
   return false;
@@ -422,8 +420,8 @@ export async function createProductInBase(
   await newProduct.save();
 }
 export async function findProductInProductBase(
-  productName: string,
-  tgId: number
+  productName: string
+  // tgId: number
 ): Promise<FoodElement[] | null> {
   const searchResults = await productBase.aggregate<FoodElement>([
     {
@@ -435,11 +433,11 @@ export async function findProductInProductBase(
         },
       },
     },
-    {
-      $match: {
-        tgId: tgId,
-      },
-    },
+    // {
+    //   $match: {
+    //     tgId: tgId,
+    //   },
+    // },
   ]);
 
   if (searchResults.length === 0) {
@@ -466,12 +464,13 @@ export async function findProductInProductBase(
 export async function calculateDailyConsumption(
   product: FoodElement,
   dailyState: DailyFood,
-  ctx: Scenes.WizardContext
+  ctx: Scenes.WizardContext,
+  tgId: number
 ): Promise<void> {
   const mass = dailyState.mass;
   const productName = product.name;
   const date = dailyState.dateOfConsumption;
-  const tgId = product.tgId;
+  // const tgId = product.tgId;
 
   const sumNutrition =
     product.protein * mass + product.totalFat * mass + product.carbs * mass;
@@ -488,6 +487,7 @@ export async function calculateDailyConsumption(
       unsaturated_fat: 0,
       totalFat: 0,
       carbs: 0,
+      fiber: 0,
 
       tgId: tgId,
     };
@@ -499,6 +499,7 @@ export async function calculateDailyConsumption(
     );
     await ctx.scene.enter("START_CALCULATION");
   }
+
   const nutritionDetails = {
     dateOfConsumption: date,
     name: productName,
@@ -510,6 +511,7 @@ export async function calculateDailyConsumption(
     unsaturated_fat: roundToThree(product.unsaturated_fat * mass),
     totalFat: roundToThree(product.totalFat * mass),
     carbs: roundToThree(product.carbs * mass),
+    fiber: roundToThree(product.fiber * mass),
 
     tgId: tgId,
   };
@@ -520,36 +522,6 @@ export async function calculateDailyConsumption(
     `Product ${productName} added to daily consumption statistics`
   );
   await ctx.scene.enter("START_CALCULATION");
-}
-
-export async function addOrCreateCalculatedNutrition(
-  nutrition: DailyFood,
-  date: Date,
-  productName: string,
-  mass: number,
-  tgId: number
-): Promise<void> {
-  const sumNutrition = nutrition.protein + nutrition.totalFat + nutrition.carbs;
-
-  const newDate = new dailyFoodBase({
-    dateOfConsumption: date,
-    name: productName,
-    mass: mass,
-    kcal: nutrition.kcal,
-    protein: nutrition.protein,
-    saturated_fat: nutrition.saturated_fat,
-    unsaturated_fat: nutrition.unsaturated_fat,
-    totalFat: nutrition.totalFat,
-    carbs: nutrition.carbs,
-    proteinPercent: (nutrition.protein / sumNutrition) * 100,
-    totalFatPercent: (nutrition.totalFat / sumNutrition) * 100,
-    carbPercent: (nutrition.carbs / sumNutrition) * 100,
-    satFatPercent: (nutrition.saturated_fat / nutrition.totalFat) * 100,
-    unsatFatPercent: (nutrition.unsaturated_fat / nutrition.totalFat) * 100,
-    tgId: tgId,
-  });
-
-  await newDate.save();
 }
 
 export async function createOrUpdateProductInProductBase(
@@ -601,7 +573,7 @@ export async function createOrUpdateProductInProductBase(
         runValidators: true,
       }
     );
-    await ctx.reply("Product data was updated in the database.");
+    await ctx.reply(`Product ${foodElement.name} was updated in the database.`);
   } else {
     const newProduct = new productBase(nutrition);
 
@@ -781,4 +753,29 @@ export async function deleteConsumptionStatisticByDateAnTgId(
   );
 
   return updatedFoods;
+}
+
+export async function findTopTenProducts(typeOfCheck: string) {
+  const foods = await productBase.find({});
+
+  const calculated = foods
+    .filter((food) => {
+      return food.protein !== 0;
+    })
+    .map((food) => {
+      return {
+        name: food.name,
+        kcalPerFiberGram: food.kcal / food.protein,
+        kcal: food.kcal,
+        fiber: food.fiber,
+      };
+    });
+
+  const sorted = calculated.sort(
+    (a, b) => a.kcalPerFiberGram - b.kcalPerFiberGram
+  );
+
+  const topTen = sorted.slice(0, 20);
+
+  console.log(topTen);
 }

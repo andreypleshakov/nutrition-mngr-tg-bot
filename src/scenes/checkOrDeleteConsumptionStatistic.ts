@@ -5,7 +5,7 @@ import {
   isValidDateFormat,
   deleteConsumptionStatisticByDateAnTgId,
 } from "../utils/utils";
-import { DialogueState, DailyFood, FoodElement } from "../utils/models";
+import { DialogueState, DailyFood } from "../utils/models";
 import {
   getTypeOfStatisticButton,
   todayOrCustomDateButton,
@@ -46,7 +46,6 @@ export const deleteConsumedProductStep =
     (scene) => scene === deleteConsumedProduct
   );
 
-///////////// check or delete consumption statistic (take data form daily_statistics)
 export const checkOrDeleteConsumptionStatistic =
   new Scenes.WizardScene<Scenes.WizardContext>(
     "CHECK_OR_DELETE_CONSUMPTION_STATISTIC",

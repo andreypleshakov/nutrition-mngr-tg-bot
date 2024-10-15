@@ -14,6 +14,7 @@ import bodyParser from "body-parser";
 import { productBase } from "./utils/schemas";
 import { FoodElement } from "./utils/models";
 import Ajv from "ajv";
+import { productRaiting } from "./scenes/productRaiting";
 
 const userName = process.env.MONGODB_USER_NAME;
 const rawPassword =
@@ -28,7 +29,7 @@ mongoose
   )
   .then(() => console.log("Connected!"))
   .catch((error) => {
-    console.log(error);
+    console.error(error);
   });
 
 const tgToken = process.env.TG_BOT_TOKEN;
@@ -115,7 +116,8 @@ const stage = new Scenes.Stage<Scenes.WizardContext>([
   addConsumption,
   createCombinedProduct,
   checkOrDeleteConsumptionStatistic,
-  costOfOneProteinsGram,
+  // costOfOneProteinsGram,
+  productRaiting,
 ]);
 
 stage.command("cancel", async (ctx) => {

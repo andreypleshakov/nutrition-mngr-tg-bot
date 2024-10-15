@@ -74,8 +74,6 @@ export const productOptionsStep = createCombinedProductSteps.findIndex(
   (scene) => scene === productOptions
 );
 
-//////////////////////////////////////
-
 export const createCombinedProduct =
   new Scenes.WizardScene<Scenes.WizardContext>(
     "CREATE_COMBINED_PRODUCT",
@@ -109,8 +107,8 @@ export async function waitingForCombinedProductName(ctx: Scenes.WizardContext) {
   }
 
   const existance = await doesExistTheSameProductWithTgId(
-    combinedProductName,
-    tgId
+    combinedProductName
+    // tgId
   );
 
   if (existance) {
@@ -160,7 +158,6 @@ export async function waitingForNameAndMassOfProduct(
   const done = isDoneButton(ctx);
   if (done) {
     await ctx.answerCbQuery();
-    console.log(actualState);
     const fixButtonCombinedProduct = getFixButtonCombinedProduct(actualState);
     await ctx.reply(
       "Choose product that you want to fix or press Done to calculate",
@@ -217,7 +214,7 @@ export async function waitingForNameAndMassOfProduct(
 
   const searchResults = await findProductInProductBase(
     actualState.actualProductName,
-    tgId
+    // tgId
   );
 
   if (searchResults === null) {
