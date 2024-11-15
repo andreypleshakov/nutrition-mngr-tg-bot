@@ -1,6 +1,46 @@
 import { Markup } from "telegraf";
-
 import { CombinedProduct, FoodElement } from "./models";
+
+const webAppUrl = "https://google.com";
+
+export const sceneButtons = {
+  reply_markup: {
+    inline_keyboard: [
+      [{ text: "Open WebApp", web_app: { url: webAppUrl } }],
+      [{ text: "Create product", callback_data: "create-product" }],
+      [
+        {
+          text: "Create combined product",
+          callback_data: "create-combined-product",
+        },
+      ],
+      [
+        {
+          text: "Add consumption",
+          callback_data: "add-consumption",
+        },
+      ],
+      [
+        {
+          text: "Check consumtion statistic",
+          callback_data: "check-consumption-statistic",
+        },
+      ],
+      [
+        {
+          text: "Check best protein/fiber product",
+          callback_data: "best-protein-fiber",
+        },
+      ],
+      [
+        {
+          text: "Leave",
+          callback_data: "leave",
+        },
+      ],
+    ],
+  },
+};
 
 export const doneButton = {
   reply_markup: {
@@ -45,9 +85,7 @@ export const typeOfRaing = {
   },
 };
 
-export function getfixButtonProductBase(
-  actualState: FoodElement
-): ReturnType<typeof Markup.inlineKeyboard> {
+export function getfixButtonProductBase(actualState: FoodElement) {
   return Markup.inlineKeyboard([
     [Markup.button.callback(`Name: ${actualState.name}`, "name")],
     [Markup.button.callback(`Kcal: ${actualState.kcal}`, "kcal")],
@@ -60,13 +98,13 @@ export function getfixButtonProductBase(
     ],
     [
       Markup.button.callback(
-        `Saturated fats: ${actualState.saturated_fat}`,
+        `Saturated fats: ${actualState.saturatedFat}`,
         "saturated-fat"
       ),
     ],
     [
       Markup.button.callback(
-        `Unsaturated fats: ${actualState.unsaturated_fat}`,
+        `Unsaturated fats: ${actualState.unsaturatedFat}`,
         "unsaturated-fat"
       ),
     ],
@@ -87,55 +125,6 @@ export const perButton = {
   },
 };
 
-export const sceneButtons = {
-  reply_markup: {
-    inline_keyboard: [
-      [{ text: "Create product", callback_data: "create-product" }],
-      [
-        {
-          text: "Create combined product",
-          callback_data: "create-combined-product",
-        },
-      ],
-
-      [
-        {
-          text: "Add consumption",
-          callback_data: "add-consumption",
-        },
-      ],
-
-      [
-        {
-          text: "Check consumtion statistic",
-          callback_data: "check-consumption-statistic",
-        },
-      ],
-
-      // [
-      //   {
-      //     text: "Cost of one gram protein in product",
-      //     callback_data: "cost-of-protein",
-      //   },
-      // ],
-
-      [
-        {
-          text: "Check best protein/fiber product",
-          callback_data: "best-protein-fiber",
-        },
-      ],
-
-      [
-        {
-          text: "Leave",
-          callback_data: "leave",
-        },
-      ],
-    ],
-  },
-};
-
 export const replaceAddOrIgnoreButton = {
   reply_markup: {
     inline_keyboard: [
@@ -151,9 +140,7 @@ export const todayOrCustomDateButton = [
   Markup.button.callback("Custom Date", "custom-date"),
 ];
 
-export function getTypeOfStatisticButton(): ReturnType<
-  typeof Markup.inlineKeyboard
-> {
+export function getTypeOfStatisticButton() {
   return Markup.inlineKeyboard([
     [
       Markup.button.callback(
@@ -172,7 +159,7 @@ export function isCreateButton(ctx: any): boolean {
   }
   return false;
 }
-
+ 
 export function getFixButtonCombinedProduct(
   combinedProduct: CombinedProduct
 ): ReturnType<typeof Markup.inlineKeyboard> {

@@ -1,4 +1,4 @@
-import { Middleware, Scenes, Markup } from "telegraf";
+import { Scenes, Markup } from "telegraf";
 import {
   handleFromStartingScene,
   getConsumptionStatisticByDateAnTgId,
@@ -11,45 +11,15 @@ import {
   todayOrCustomDateButton,
 } from "../utils/buttons";
 import { dailyFoodBase } from "../utils/schemas";
+import {
+  manipulateConsumptionStatisticStepsList,
+  steps,
+} from "../steps-middlewares/manipulateConsumptionStatistic";
 
-export const checkOrDeleteConsumptionStatisticSteps: Middleware<Scenes.WizardContext>[] =
-  [
-    startingDialogue,
-    optionsOfDateStatistic,
-    customDateForStatistic,
-    typeOfStatistic,
-    deleteConsumedProduct,
-  ];
-
-export const startingDialogueStep =
-  checkOrDeleteConsumptionStatisticSteps.findIndex(
-    (scene) => scene === startingDialogue
-  );
-
-export const optionsOfDateStatisticStep =
-  checkOrDeleteConsumptionStatisticSteps.findIndex(
-    (scene) => scene === optionsOfDateStatistic
-  );
-
-export const customDateForStatisticStep =
-  checkOrDeleteConsumptionStatisticSteps.findIndex(
-    (scene) => scene === customDateForStatistic
-  );
-
-export const typeOfStatisticStep =
-  checkOrDeleteConsumptionStatisticSteps.findIndex(
-    (scene) => scene === typeOfStatistic
-  );
-
-export const deleteConsumedProductStep =
-  checkOrDeleteConsumptionStatisticSteps.findIndex(
-    (scene) => scene === deleteConsumedProduct
-  );
-
-export const checkOrDeleteConsumptionStatistic =
+export const manipulateConsumptionStatistic =
   new Scenes.WizardScene<Scenes.WizardContext>(
     "CHECK_OR_DELETE_CONSUMPTION_STATISTIC",
-    ...checkOrDeleteConsumptionStatisticSteps
+    ...manipulateConsumptionStatisticStepsList
   );
 
 export async function startingDialogue(ctx: Scenes.WizardContext) {
@@ -66,7 +36,7 @@ export async function startingDialogue(ctx: Scenes.WizardContext) {
       "CUSTOM - check custom day of your consumption",
     Markup.inlineKeyboard(todayOrCustomDateButton)
   );
-  return ctx.wizard.selectStep(optionsOfDateStatisticStep);
+  return ctx.wizard.selectStep(steps.optionsOfDateStatistic);
 }
 
 export async function optionsOfDateStatistic(ctx: Scenes.WizardContext) {
@@ -94,10 +64,10 @@ export async function optionsOfDateStatistic(ctx: Scenes.WizardContext) {
       typeOfStatisticButton
     );
 
-    return ctx.wizard.selectStep(typeOfStatisticStep);
+    return ctx.wizard.selectStep(steps.typeOfStatistic);
   }
   await ctx.reply("Enter date that you require in this format YYYY-MM-DD");
-  return ctx.wizard.selectStep(customDateForStatisticStep);
+  return ctx.wizard.selectStep(steps.customDateForStatistic);
 }
 
 export async function customDateForStatistic(ctx: Scenes.WizardContext) {
@@ -126,7 +96,7 @@ export async function customDateForStatistic(ctx: Scenes.WizardContext) {
     typeOfStatisticButton
   );
 
-  return ctx.wizard.selectStep(typeOfStatisticStep);
+  return ctx.wizard.selectStep(steps.typeOfStatistic);
 }
 
 export async function typeOfStatistic(ctx: Scenes.WizardContext) {
@@ -152,7 +122,6 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
       await getConsumptionStatisticByDateAnTgId(
         tgId,
         checkForList,
-
         startDate,
         endDate,
         ctx
@@ -164,7 +133,6 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
       await getConsumptionStatisticByDateAnTgId(
         tgId,
         checkForList,
-
         startDate,
         endDate,
         ctx
@@ -201,7 +169,7 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
         Markup.inlineKeyboard(buttons)
       );
 
-      return ctx.wizard.selectStep(deleteConsumedProductStep);
+      return ctx.wizard.selectStep(steps.deleteConsumedProduct);
   }
 }
 
@@ -210,17 +178,14 @@ export async function deleteConsumedProduct(ctx: Scenes.WizardContext) {
     return;
   }
 
-  let arrayOfProducts = (ctx.wizard.state as DailyFood).arrayOfProducts;
+  await ctx.answerCbQuery();
 
+  let arrayOfProducts = (ctx.wizard.state as DailyFood).arrayOfProducts;
   let arrayForDelete = (ctx.wizard.state as DailyFood).arrayForDelete;
 
   if (ctx.callbackQuery.data === "Done") {
-    await ctx.answerCbQuery();
-
     const filter = (ctx.wizard.state as DailyFood).arrayForDelete;
-
     await dailyFoodBase.deleteMany({ _id: { $in: filter } });
-
     await ctx.reply(
       "Product(s) succesfully deleted from your daily consumption list "
     );
@@ -230,8 +195,6 @@ export async function deleteConsumedProduct(ctx: Scenes.WizardContext) {
   if ((ctx.wizard.state as DialogueState).fromPreparationToDelete !== true) {
     arrayForDelete = [];
   }
-
-  await ctx.answerCbQuery();
 
   let targetId = ctx.callbackQuery.data;
 
@@ -268,5 +231,5 @@ export async function deleteConsumedProduct(ctx: Scenes.WizardContext) {
 
   await ctx.editMessageReplyMarkup(Markup.inlineKeyboard(buttons).reply_markup);
 
-  return ctx.wizard.selectStep(deleteConsumedProductStep);
+  return ctx.wizard.selectStep(steps.deleteConsumedProduct);
 }

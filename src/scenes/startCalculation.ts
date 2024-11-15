@@ -1,7 +1,7 @@
 import { Scenes } from "telegraf";
 import { DialogueState } from "../utils/models";
 import { userBase } from "../utils/schemas";
-import { existanceOfUser, findTopTenProducts } from "../utils/utils";
+import { existanceOfUser } from "../utils/utils";
 import { sceneButtons } from "../utils/buttons";
 
 export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
@@ -9,21 +9,29 @@ export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
 
   async (ctx) => {
     if (ctx.from) {
-      const userId = ctx.from.id;
-      const userName = ctx.from.username!;
+      const { id: userId, username: userName } = ctx.from;
 
-      const existance = await existanceOfUser(userId, userName);
+      try {
+        const existance = await existanceOfUser(userId);
 
-      if (!existance) {
-        const newUser = new userBase({ tgId: userId, tgUserName: userName });
-        newUser.save();
+        if (!existance) {
+          const userData = {
+            tgId: userId,
+            ...(userName && { tgUserName: userName }),
+          };
+
+          const newUser = new userBase(userData);
+          await newUser.save();
+          await ctx.reply("Select scene that you want to enter", sceneButtons);
+          return ctx.wizard.next();
+        }
+      } catch (error) {
+        await ctx.reply("Error");
       }
-
-      // await findTopTenProducts();
-
-      await ctx.reply("Select scene that you want to enter", sceneButtons);
-      return ctx.wizard.next();
     }
+
+    await ctx.reply("Select scene that you want to enter", sceneButtons);
+    return ctx.wizard.next();
   },
 
   async (ctx) => {
@@ -48,8 +56,6 @@ export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
           "CHECK_OR_DELETE_CONSUMPTION_STATISTIC",
           fromStartingScene
         );
-      // case "cost-of-protein":
-      //   return ctx.scene.enter("COST_OF_PROTEIN");
       case "best-protein-fiber":
         return ctx.scene.enter("PRODUCT_RAITING");
       case "leave":

@@ -9,13 +9,14 @@ import { userBase, dailyFoodBase, productBase } from "./schemas";
 import { Scenes } from "telegraf";
 import { getfixButtonProductBase } from "./buttons";
 
+/*
 export function calculationOfCostProtein(actualState: CostOfProtein): number {
   const amountOfProtein = actualState.protein / actualState.massScope;
   const costOfGram = actualState.cost / actualState.totalMass;
   const costForOneGramOfProtein = costOfGram / amountOfProtein;
   return costForOneGramOfProtein;
-  //TO DO
 }
+  */
 
 export function calculateAndRoundNutrient(
   nutrient: number,
@@ -208,8 +209,8 @@ export function combineAllNutrition(
     kcal: 0,
     protein: 0,
     totalFat: 0,
-    saturated_fat: 0,
-    unsaturated_fat: 0,
+    saturatedFat: 0,
+    unsaturatedFat: 0,
     carbs: 0,
     fiber: 0,
 
@@ -222,8 +223,8 @@ export function combineAllNutrition(
     resultProduct.kcal += product.kcal * product.mass;
     resultProduct.protein += product.protein * product.mass;
     resultProduct.totalFat += product.totalFat * product.mass;
-    resultProduct.saturated_fat += product.saturated_fat * product.mass;
-    resultProduct.unsaturated_fat += product.unsaturated_fat * product.mass;
+    resultProduct.saturatedFat += product.saturatedFat * product.mass;
+    resultProduct.unsaturatedFat += product.unsaturatedFat * product.mass;
     resultProduct.carbs += product.carbs * product.mass;
     resultProduct.fiber += product.fiber * product.mass;
   });
@@ -235,10 +236,10 @@ export function combineAllNutrition(
     perGramResultProduct.protein / perGramResultProduct.mass;
   perGramResultProduct.totalFat =
     perGramResultProduct.totalFat / perGramResultProduct.mass;
-  perGramResultProduct.saturated_fat =
-    perGramResultProduct.saturated_fat / perGramResultProduct.mass;
-  perGramResultProduct.unsaturated_fat =
-    perGramResultProduct.unsaturated_fat / perGramResultProduct.mass;
+  perGramResultProduct.saturatedFat =
+    perGramResultProduct.saturatedFat / perGramResultProduct.mass;
+  perGramResultProduct.unsaturatedFat =
+    perGramResultProduct.unsaturatedFat / perGramResultProduct.mass;
   perGramResultProduct.carbs =
     perGramResultProduct.carbs / perGramResultProduct.mass;
   perGramResultProduct.fiber =
@@ -330,8 +331,8 @@ export async function getProductNutritionFromBaseIfExists(
     (nutrition.kcal = product!.kcal),
     (nutrition.protein = product!.protein),
     (nutrition.totalFat = product!.totalFat),
-    (nutrition.saturated_fat = product!.saturated_fat),
-    (nutrition.unsaturated_fat = product!.unsaturated_fat),
+    (nutrition.saturatedFat = product!.saturatedFat),
+    (nutrition.unsaturatedFat = product!.unsaturatedFat),
     (nutrition.carbs = product!.carbs);
 
   nutrition.tgId = tgId;
@@ -377,8 +378,8 @@ export async function createProductInBase(
 
   const kcal = roundToThree(foodElement.kcal);
   const protein = roundToThree(foodElement.protein);
-  const saturatedFat = roundToThree(foodElement.saturated_fat);
-  const unsaturatedFat = roundToThree(foodElement.unsaturated_fat);
+  const saturatedFat = roundToThree(foodElement.saturatedFat);
+  const unsaturatedFat = roundToThree(foodElement.unsaturatedFat);
   const carbs = roundToThree(foodElement.carbs);
   const totalFat = roundToThree(foodElement.totalFat);
   const sumNutrition = roundToThree(protein + totalFat + carbs);
@@ -405,8 +406,8 @@ export async function createProductInBase(
     name,
     kcal,
     protein,
-    saturated_fat: saturatedFat,
-    unsaturated_fat: unsaturatedFat,
+    saturatedFat: saturatedFat,
+    unsaturatedFat: unsaturatedFat,
     totalFat,
     carbs,
     proteinPercent,
@@ -480,15 +481,13 @@ export async function calculateDailyConsumption(
       dateOfConsumption: date,
       name: productName,
       mass: mass,
-
       kcal: 0,
       protein: 0,
-      saturated_fat: 0,
-      unsaturated_fat: 0,
+      saturatedFat: 0,
+      unsaturatedFat: 0,
       totalFat: 0,
       carbs: 0,
       fiber: 0,
-
       tgId: tgId,
     };
 
@@ -507,8 +506,8 @@ export async function calculateDailyConsumption(
 
     kcal: roundToThree(product.kcal * mass),
     protein: roundToThree(product.protein * mass),
-    saturated_fat: roundToThree(product.saturated_fat * mass),
-    unsaturated_fat: roundToThree(product.unsaturated_fat * mass),
+    saturatedFat: roundToThree(product.saturatedFat * mass),
+    unsaturatedFat: roundToThree(product.unsaturatedFat * mass),
     totalFat: roundToThree(product.totalFat * mass),
     carbs: roundToThree(product.carbs * mass),
     fiber: roundToThree(product.fiber * mass),
@@ -537,8 +536,8 @@ export async function createOrUpdateProductInProductBase(
     kcal: roundToThree(foodElement.kcal),
     protein: roundToThree(foodElement.protein),
     totalFat: roundToThree(foodElement.totalFat),
-    saturated_fat: roundToThree(foodElement.saturated_fat),
-    unsaturated_fat: roundToThree(foodElement.unsaturated_fat),
+    saturatedFat: roundToThree(foodElement.saturatedFat),
+    unsaturatedFat: roundToThree(foodElement.unsaturatedFat),
     carbs: roundToThree(foodElement.carbs),
     fiber: roundToThree(foodElement.fiber),
 
@@ -553,11 +552,11 @@ export async function createOrUpdateProductInProductBase(
     carbPercent: calculatePercentageOfNutrient(foodElement.carbs, foodElement),
 
     satFatPercent: calculateFatTypePercentage(
-      foodElement.saturated_fat,
+      foodElement.saturatedFat,
       foodElement.totalFat
     ),
     unsatFatPercent: calculateFatTypePercentage(
-      foodElement.unsaturated_fat,
+      foodElement.unsaturatedFat,
       foodElement.totalFat
     ),
 
@@ -584,13 +583,9 @@ export async function createOrUpdateProductInProductBase(
   await ctx.scene.enter("START_CALCULATION");
 }
 
-export async function existanceOfUser(
-  userId: number,
-  userName: string
-): Promise<boolean> {
+export async function existanceOfUser(userId: number): Promise<boolean> {
   const existance = await userBase.findOne({
     tgId: userId,
-    tgUserName: userName,
   });
 
   if (existance) {
@@ -638,8 +633,8 @@ export async function getConsumptionStatisticByDateAnTgId(
       accumulator.kcal += food.kcal;
       accumulator.protein += food.protein;
       accumulator.totalFat += food.totalFat;
-      accumulator.saturated_fat += food.saturated_fat;
-      accumulator.unsaturated_fat += food.unsaturated_fat;
+      accumulator.saturatedFat += food.saturatedFat;
+      accumulator.unsaturatedFat += food.unsaturatedFat;
       accumulator.carbs += food.carbs;
       accumulator.fiber += food.fiber;
 
@@ -651,8 +646,8 @@ export async function getConsumptionStatisticByDateAnTgId(
       kcal: 0,
       protein: 0,
       totalFat: 0,
-      saturated_fat: 0,
-      unsaturated_fat: 0,
+      saturatedFat: 0,
+      unsaturatedFat: 0,
       carbs: 0,
 
       proteinPercent: 0,
@@ -677,12 +672,12 @@ export async function getConsumptionStatisticByDateAnTgId(
   totals.carbPercent = calculatePercentageOfNutrient(totals.carbs, totals);
 
   totals.satFatPercent = calculatePercentageOfNutrient(
-    totals.saturated_fat,
+    totals.saturatedFat,
     totals
   );
 
   totals.unsatFatPercent = calculatePercentageOfNutrient(
-    totals.unsaturated_fat,
+    totals.unsaturatedFat,
     totals
   );
 
@@ -712,6 +707,7 @@ Unsaturated fats: ${totals.unsatFatPercent}%`;
   ctx.scene.enter("START_CALCULATION");
   return;
 }
+
 export async function deleteConsumptionStatisticByDateAnTgId(
   startDate: Date,
   endDate: Date,
@@ -731,8 +727,8 @@ export async function deleteConsumptionStatisticByDateAnTgId(
       mass,
       kcal,
       protein,
-      saturated_fat,
-      unsaturated_fat,
+      saturatedFat,
+      unsaturatedFat,
       totalFat,
       carbs,
       fiber,
@@ -743,8 +739,8 @@ export async function deleteConsumptionStatisticByDateAnTgId(
       mass,
       kcal,
       protein,
-      saturated_fat,
-      unsaturated_fat,
+      saturatedFat,
+      unsaturatedFat,
       totalFat,
       carbs,
       fiber,

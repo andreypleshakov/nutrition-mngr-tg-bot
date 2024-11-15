@@ -1,6 +1,5 @@
-import { Middleware, Scenes, Markup } from "telegraf";
+import { Scenes, Markup } from "telegraf";
 import { DailyFood, DialogueState } from "../utils/models";
-
 import {
   handleFromStartingScene,
   calculateDailyConsumption,
@@ -14,46 +13,22 @@ import {
   createButton,
   todayOrCustomDateButton,
 } from "../utils/buttons";
-
-export const addConsumptionSteps: Middleware<Scenes.WizardContext>[] = [
-  startingDialogue,
-  waitingForNameAndMassOfProduct,
-  todayOrCustomDate,
-  customDate,
-  productOptions,
-];
-
-export const startingDialogueStep = addConsumptionSteps.findIndex(
-  (scene) => scene === startingDialogue
-);
-
-export const waitingForNameAndMassOfProductStep = addConsumptionSteps.findIndex(
-  (scene) => scene === waitingForNameAndMassOfProduct
-);
-
-export const todayOrCustomDateStep = addConsumptionSteps.findIndex(
-  (scene) => scene === todayOrCustomDate
-);
-
-export const customDateStep = addConsumptionSteps.findIndex(
-  (scene) => scene === customDate
-);
-
-export const productOptionsStep = addConsumptionSteps.findIndex(
-  (scene) => scene === productOptions
-);
+import {
+  addConsumptionStepsList,
+  steps,
+} from "../steps-middlewares/addConsumptionSteps";
 
 export const addConsumption = new Scenes.WizardScene<Scenes.WizardContext>(
   "ADD_CONSUMPTION",
-  ...addConsumptionSteps
+  ...addConsumptionStepsList
 );
 
 export async function startingDialogue(ctx: Scenes.WizardContext) {
   (ctx.wizard.state as DailyFood).tgId = ctx.from!.id;
 
-  const fromStartingScene2 = await handleFromStartingScene(ctx);
+  const fromStartingScene = await handleFromStartingScene(ctx);
 
-  if (fromStartingScene2) {
+  if (fromStartingScene) {
     return;
   }
 
@@ -62,7 +37,7 @@ export async function startingDialogue(ctx: Scenes.WizardContext) {
       "CUSTOM - check custom day of your consumption",
     Markup.inlineKeyboard(todayOrCustomDateButton)
   );
-  return ctx.wizard.selectStep(todayOrCustomDateStep);
+  return ctx.wizard.selectStep(steps.todayOrCustomDate);
 }
 
 export async function todayOrCustomDate(ctx: Scenes.WizardContext) {
@@ -78,11 +53,11 @@ export async function todayOrCustomDate(ctx: Scenes.WizardContext) {
     await ctx.reply(
       "Enter product's name and mass (in gram) in this format: NAME MASS (example: apple 100/red apple 0.9/sweet red apple 100/etc.)"
     );
-    return ctx.wizard.selectStep(waitingForNameAndMassOfProductStep);
+    return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
   }
 
   await ctx.reply("Enter date that you require in this format YYYY-MM-DD");
-  return ctx.wizard.selectStep(customDateStep);
+  return ctx.wizard.selectStep(steps.customDate);
 }
 
 export async function customDate(ctx: Scenes.WizardContext) {
@@ -103,7 +78,7 @@ export async function customDate(ctx: Scenes.WizardContext) {
   await ctx.reply(
     "Enter product's name and mass (in gram) in this format: NAME MASS (example: apple 100/red apple 0.9/sweet red apple 100/etc.)"
   );
-  return ctx.wizard.selectStep(waitingForNameAndMassOfProductStep);
+  return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
 }
 
 export async function waitingForNameAndMassOfProduct(
@@ -160,7 +135,7 @@ export async function waitingForNameAndMassOfProduct(
   const chooseProductButton = getChooseProductButton(searchResults);
   await ctx.reply("Did you mean one of these products?", chooseProductButton);
 
-  return ctx.wizard.selectStep(productOptionsStep);
+  return ctx.wizard.selectStep(steps.productOptions);
 }
 
 export async function productOptions(ctx: Scenes.WizardContext) {

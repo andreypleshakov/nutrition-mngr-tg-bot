@@ -10,8 +10,8 @@ export interface FoodElement extends users {
   kcal: number;
   protein: number;
   totalFat: number;
-  saturated_fat: number;
-  unsaturated_fat: number;
+  saturatedFat: number;
+  unsaturatedFat: number;
   carbs: number;
   fiber: number;
 }
@@ -23,19 +23,14 @@ export interface ProductRaiting extends FoodElement {
 
 export interface DialogueState extends FoodElement {
   updateProduct: boolean;
-
   fromDailyProduct: boolean;
   fromCombinedProduct: boolean;
   fromFixingStep: boolean;
   fromStartingScene: boolean;
   fromPreparationToDelete: boolean;
-
   checkForCombined: boolean;
-
   listOfProducts: boolean;
-
   deleteConsumption: boolean;
-
   customMass: number;
 }
 
@@ -50,7 +45,6 @@ export interface CostOfProtein {
 
 export interface DailyFood extends FoodElement {
   dateOfConsumption: Date;
-
   arrayOfProducts: FoodElement[];
   arrayForDelete: string[];
   objectProduct: {};
@@ -59,10 +53,8 @@ export interface DailyFood extends FoodElement {
 export interface CombinedProduct extends DialogueState {
   CombinedName: string;
   CombinedMass: number;
-
   products: Record<string, FoodElement>;
   actualProductName: string;
   actualProductMass: number;
-
   arrayOfProducts: FoodElement[];
 }

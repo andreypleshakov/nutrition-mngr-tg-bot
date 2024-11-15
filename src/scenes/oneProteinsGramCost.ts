@@ -1,70 +1,25 @@
-import { Middleware, Scenes } from "telegraf";
-
+import { Scenes } from "telegraf";
 import {
   isValidNumberString,
   replaceCommaToDot,
   IsInputStringAndNumber,
-  calculationOfCostProtein,
 } from "../utils/utils";
 import { CostOfProtein } from "../utils/models";
 import { perButton } from "../utils/buttons";
-
-export const costOfOneProteinsGramSteps: Middleware<Scenes.WizardContext>[] = [
-  startingDialogue,
-  nameOfProduct,
-  perHundredOrCustomMass,
-  customMass,
-  proteinPerSelectedMass,
-  totalMassOfProduct,
-  costOfProduct,
-  finalCalculation,
-];
-
-export const startingDialogueStep = costOfOneProteinsGramSteps.findIndex(
-  (scene) => scene === startingDialogue
-);
-
-export const nameOfProductStep = costOfOneProteinsGramSteps.findIndex(
-  (scene) => scene === nameOfProduct
-);
-
-export const perHundredOrCustomMassStep = costOfOneProteinsGramSteps.findIndex(
-  (scene) => scene === perHundredOrCustomMass
-);
-
-export const customMassStep = costOfOneProteinsGramSteps.findIndex(
-  (scene) => scene === customMass
-);
-
-export const proteinPerSelectedMassStep = costOfOneProteinsGramSteps.findIndex(
-  (scene) => scene === proteinPerSelectedMass
-);
-
-export const totalMassOfProductStep = costOfOneProteinsGramSteps.findIndex(
-  (scene) => scene === totalMassOfProduct
-);
-
-export const costOfProductStep = costOfOneProteinsGramSteps.findIndex(
-  (scene) => scene === costOfProduct
-);
-
-export const fixingOrFinalStep = costOfOneProteinsGramSteps.findIndex(
-  (scene) => scene === fixingOrFinal
-);
-
-export const finalCalculationStep = costOfOneProteinsGramSteps.findIndex(
-  (scene) => scene === finalCalculation
-);
+import {
+  oneProteinsGramCostStepsList,
+  steps,
+} from "../steps-middlewares/oneProteinsGramCostSteps";
 
 export const costOfOneProteinsGram =
   new Scenes.WizardScene<Scenes.WizardContext>(
     "COST_OF_PROTEIN",
-    ...costOfOneProteinsGramSteps
+    ...oneProteinsGramCostStepsList
   );
 
 export async function startingDialogue(ctx: Scenes.WizardContext) {
   await ctx.reply("Name of product");
-  return ctx.wizard.selectStep(nameOfProductStep);
+  return ctx.wizard.selectStep(steps.nameOfProduct);
 }
 
 export async function nameOfProduct(ctx: Scenes.WizardContext) {
@@ -77,7 +32,7 @@ export async function nameOfProduct(ctx: Scenes.WizardContext) {
     "Choose the scope of mass you want to calculate nutrition PER 100 or PER CUSTOM",
     perButton
   );
-  return ctx.wizard.selectStep(perHundredOrCustomMassStep);
+  return ctx.wizard.selectStep(steps.perHundredOrCustomMass);
 }
 
 export async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
@@ -90,10 +45,10 @@ export async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
   if (callBackData === "100-gram") {
     (ctx.wizard.state as CostOfProtein).massScope = 100;
     await ctx.reply("Protein per 100 gram");
-    return ctx.wizard.selectStep(proteinPerSelectedMassStep);
+    return ctx.wizard.selectStep(steps.proteinPerSelectedMass);
   } else if (callBackData === "custom-mass") {
     await ctx.reply("Enter mass that you want to calculate");
-    return ctx.wizard.selectStep(customMassStep);
+    return ctx.wizard.selectStep(steps.customMass);
   }
 }
 
@@ -117,7 +72,7 @@ export async function customMass(ctx: Scenes.WizardContext) {
   (ctx.wizard.state as CostOfProtein).massScope = customMass;
 
   await ctx.reply(`Protein per ${customMass} gram`);
-  return ctx.wizard.selectStep(proteinPerSelectedMassStep);
+  return ctx.wizard.selectStep(steps.proteinPerSelectedMass);
 }
 
 export async function proteinPerSelectedMass(ctx: Scenes.WizardContext) {
@@ -135,7 +90,7 @@ export async function proteinPerSelectedMass(ctx: Scenes.WizardContext) {
   );
 
   await ctx.reply("Enter total mass of product");
-  return ctx.wizard.selectStep(totalMassOfProductStep);
+  return ctx.wizard.selectStep(steps.totalMassOfProduct);
 }
 
 export async function totalMassOfProduct(ctx: Scenes.WizardContext) {
@@ -153,7 +108,7 @@ export async function totalMassOfProduct(ctx: Scenes.WizardContext) {
   await ctx.reply(
     "Enter currency with cost of product (ex.: usd 100, usd 10.1, usd 10,1"
   );
-  return ctx.wizard.selectStep(costOfProductStep);
+  return ctx.wizard.selectStep(steps.costOfProduct);
 }
 
 export async function costOfProduct(ctx: Scenes.WizardContext) {
@@ -201,7 +156,7 @@ export async function costOfProduct(ctx: Scenes.WizardContext) {
     "Choose what you want to fix or press Finish to calculate?",
     fixButtonCostOfProtein
   );
-  return ctx.wizard.selectStep(fixingOrFinalStep);
+  return ctx.wizard.selectStep(steps.fixingOrFinal);
 }
 
 export async function fixingOrFinal(ctx: Scenes.WizardContext) {
@@ -215,30 +170,26 @@ export async function fixingOrFinal(ctx: Scenes.WizardContext) {
   switch (callBackData) {
     case "name":
       await ctx.reply("Name of product");
-      return ctx.wizard.selectStep(nameOfProductStep);
+      return ctx.wizard.selectStep(steps.nameOfProduct);
     case "scope":
       await ctx.reply(
         "Choose the scope of mass you want to calculate nutrition PER 100 or PER CUSTOM",
         perButton
       );
-      return ctx.wizard.selectStep(perHundredOrCustomMassStep);
+      return ctx.wizard.selectStep(steps.perHundredOrCustomMass);
     case "protein-per-scope":
       await ctx.reply(`Protein per ${customMass} gram`);
-      return ctx.wizard.selectStep(proteinPerSelectedMassStep);
+      return ctx.wizard.selectStep(steps.proteinPerSelectedMass);
     case "cost":
       await ctx.reply(
         "Enter currency with cost of product (ex.: usd 100, usd 10.1, usd 10,1"
       );
-      return ctx.wizard.selectStep(costOfProductStep);
+      return ctx.wizard.selectStep(steps.costOfProduct);
     case "finish":
-      return ctx.wizard.selectStep(finalCalculationStep);
+      return ctx.wizard.selectStep(steps.finalCalculation);
   }
 }
 
 export async function finalCalculation(ctx: Scenes.WizardContext) {
   const actualState = ctx.wizard.state as CostOfProtein;
-
-  //TO DO
-  calculationOfCostProtein(actualState);
-  //
 }
