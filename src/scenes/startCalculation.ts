@@ -51,6 +51,8 @@ export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
         return ctx.scene.enter("CREATE_COMBINED_PRODUCT", fromStartingScene);
       case "add-consumption":
         return ctx.scene.enter("ADD_CONSUMPTION", fromStartingScene);
+      case "add-custom-consumption":
+        return ctx.scene.enter("ADD_CUSTOM_CONSUMPTION", fromStartingScene);
       case "check-consumption-statistic":
         return ctx.scene.enter(
           "CHECK_OR_DELETE_CONSUMPTION_STATISTIC",
@@ -58,6 +60,8 @@ export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
         );
       case "best-protein-fiber":
         return ctx.scene.enter("PRODUCT_RAITING");
+      case "set-or-check-goal":
+        return ctx.scene.enter("SET_OR_CHECK_GOAL");
       case "leave":
         return ctx.scene.leave();
     }

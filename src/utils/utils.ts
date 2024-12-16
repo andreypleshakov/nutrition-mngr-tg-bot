@@ -7,7 +7,7 @@ import {
 } from "./models";
 import { userBase, dailyFoodBase, productBase } from "./schemas";
 import { Scenes } from "telegraf";
-import { getfixButtonProductBase } from "./buttons";
+import { ButtonType, createButton, getfixButtonProductBase } from "./buttons";
 
 /*
 export function calculationOfCostProtein(actualState: CostOfProtein): number {
@@ -493,10 +493,15 @@ export async function calculateDailyConsumption(
 
     const newDate = new dailyFoodBase(nutritionDetails);
     await newDate.save();
-    await ctx.reply(
+
+    await deleteAndUpdateBotMessage(
+      ctx,
       `Product ${productName} added to daily consumption statistics`
     );
+
+    await ctx.deleteMessage((ctx.wizard.state as DialogueState).botMessageId);
     await ctx.scene.enter("START_CALCULATION");
+    return;
   }
 
   const nutritionDetails = {
@@ -517,9 +522,11 @@ export async function calculateDailyConsumption(
 
   const newDate = new dailyFoodBase(nutritionDetails);
   await newDate.save();
-  await ctx.reply(
+  await deleteAndUpdateBotMessage(
+    ctx,
     `Product ${productName} added to daily consumption statistics`
   );
+  await ctx.deleteMessage((ctx.wizard.state as DialogueState).botMessageId);
   await ctx.scene.enter("START_CALCULATION");
 }
 
@@ -642,22 +649,18 @@ export async function getConsumptionStatisticByDateAnTgId(
     },
     {
       mass: 0,
-
       kcal: 0,
       protein: 0,
       totalFat: 0,
       saturatedFat: 0,
       unsaturatedFat: 0,
       carbs: 0,
-
       proteinPercent: 0,
       totalFatPercent: 0,
       carbPercent: 0,
       fiber: 0,
-
       satFatPercent: 0,
       unsatFatPercent: 0,
-
       tgId: tgId,
     }
   );
@@ -774,4 +777,46 @@ export async function findTopTenProducts(typeOfCheck: string) {
   const topTen = sorted.slice(0, 20);
 
   console.log(topTen);
+}
+
+export async function deleteAndUpdateBotMessageCreate(
+  ctx: Scenes.WizardContext,
+  button?: ButtonType
+): Promise<void> {
+  await ctx.deleteMessage(ctx.message!.message_id);
+
+  const message =
+    `**${
+      (ctx.wizard.state as DailyFood).name
+    }** doesn't exist in product database\n\n` +
+    `**Create** - to create **${
+      (ctx.wizard.state as DailyFood).name
+    }** in product database\n` +
+    "Or just enter name of another product to try again";
+
+  await ctx.telegram.editMessageText(
+    ctx.chat!.id,
+    (ctx.wizard.state as DialogueState).botMessageId,
+    undefined,
+    message,
+    button
+  );
+}
+
+export async function deleteAndUpdateBotMessage(
+  ctx: Scenes.WizardContext,
+  message: string,
+  button?: ButtonType
+): Promise<void> {
+  if (ctx.message) {
+    await ctx.deleteMessage(ctx.message.message_id);
+  }
+
+  await ctx.telegram.editMessageText(
+    ctx.chat!.id,
+    (ctx.wizard.state as DialogueState).botMessageId,
+    undefined,
+    message,
+    button
+  );
 }

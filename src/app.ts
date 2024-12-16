@@ -8,6 +8,14 @@ import { startCalculation } from "./scenes/startCalculation";
 import mongoose from "mongoose";
 import { productRaiting } from "./scenes/productRaiting";
 import { manipulateConsumptionStatistic } from "./scenes/checkOrDeleteConsumptionStatistic";
+import { addCustomConsumption } from "./scenes/addCustomConsumption";
+import { setOrCheckGoal } from "./scenes/setOrCheckGoal";
+import express from "express";
+import cors from "cors";
+import userRoutes from "./api/users/userRoutes";
+import statisticRoutes from "./api/statistic/statisticRoutes";
+import goalRoutes from "./api/goal/goalRoutes";
+import productsRoutes from "./api/products/productsRoutes";
 
 const userName = process.env.MONGODB_USER_NAME;
 const rawPassword =
@@ -15,6 +23,25 @@ const rawPassword =
     ? process.env.MONGODB_ADMIN_PASSWORD
     : "";
 const encoderedPassword = encodeURIComponent(rawPassword);
+
+const app = express();
+
+const corsOptions = {
+  origin: "http://localhost:3000",
+  methods: ["GET", "POST", "DELETE"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+
+const PORT = 3001;
+
+app.use("/users", userRoutes);
+app.use("/statistic", statisticRoutes);
+app.use("/goal", goalRoutes);
+app.use("/products", productsRoutes);
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 mongoose
   .connect(
@@ -40,8 +67,10 @@ const stage = new Scenes.Stage<Scenes.WizardContext>([
   startCalculation,
   createProduct,
   addConsumption,
+  addCustomConsumption,
   createCombinedProduct,
   manipulateConsumptionStatistic,
+  setOrCheckGoal,
   productRaiting,
 ]);
 

@@ -185,7 +185,10 @@ export async function deleteConsumedProduct(ctx: Scenes.WizardContext) {
 
   if (ctx.callbackQuery.data === "Done") {
     const filter = (ctx.wizard.state as DailyFood).arrayForDelete;
-    await dailyFoodBase.deleteMany({ _id: { $in: filter } });
+    await dailyFoodBase.deleteMany({
+      _id: { $in: filter },
+      tgId: (ctx.wizard.state as DailyFood).tgId,
+    });
     await ctx.reply(
       "Product(s) succesfully deleted from your daily consumption list "
     );

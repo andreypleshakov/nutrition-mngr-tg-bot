@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { users, DailyFood, FoodElement } from "./models";
+import { Users, DailyFood, FoodElement } from "./models";
 
 const defaultSchemaParameters = {
   name: { type: String, required: true },
@@ -15,12 +15,12 @@ const defaultSchemaParameters = {
 
 const { name, ...nutritionGoalFields } = defaultSchemaParameters;
 
-const userSchema = new Schema<users>({
+const userSchema = new Schema<Users>({
   tgId: { type: Number, required: true, unique: true },
   tgUserName: { type: String, required: true },
 });
 
-export const userBase = model<users>("userBase", userSchema);
+export const userBase = model<Users>("userBase", userSchema);
 
 const dailyFoodSchema = new Schema<DailyFood>({
   dateOfConsumption: { type: Date, required: true },
@@ -41,3 +41,5 @@ export const productBase = model<FoodElement>("productBase", productBaseSchema);
 const nutritionGoalSchema = new Schema<FoodElement>({
   ...nutritionGoalFields,
 });
+
+export const goalBase = model<FoodElement>("goalBase", nutritionGoalSchema);

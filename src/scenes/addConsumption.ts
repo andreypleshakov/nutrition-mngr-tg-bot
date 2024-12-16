@@ -6,11 +6,12 @@ import {
   isValidDateFormat,
   findProductInProductBase,
   IsInputStringAndNumber,
+  deleteAndUpdateBotMessage,
+  deleteAndUpdateBotMessageCreate,
 } from "../utils/utils";
 import {
-  getChooseProductButton,
-  isCreateButton,
   createButton,
+  getChooseProductButton,
   todayOrCustomDateButton,
 } from "../utils/buttons";
 import {
@@ -32,11 +33,14 @@ export async function startingDialogue(ctx: Scenes.WizardContext) {
     return;
   }
 
-  await ctx.reply(
-    "TODAY - check today's consumption statistic\n" +
-      "CUSTOM - check custom day of your consumption",
+  const firstMessage = await ctx.reply(
+    "TODAY - add today's consumption statistic\n" +
+      "CUSTOM - add custom day of your consumption",
     Markup.inlineKeyboard(todayOrCustomDateButton)
   );
+
+  (ctx.wizard.state as DialogueState).botMessageId = firstMessage.message_id;
+
   return ctx.wizard.selectStep(steps.todayOrCustomDate);
 }
 
@@ -45,18 +49,20 @@ export async function todayOrCustomDate(ctx: Scenes.WizardContext) {
     return;
   }
 
-  const callBackData = ctx.callbackQuery.data;
   await ctx.answerCbQuery();
+  const callBackData = ctx.callbackQuery.data;
 
   if (callBackData === "today") {
     (ctx.wizard.state as DailyFood).dateOfConsumption = new Date();
-    await ctx.reply(
+    await ctx.editMessageText(
       "Enter product's name and mass (in gram) in this format: NAME MASS (example: apple 100/red apple 0.9/sweet red apple 100/etc.)"
     );
     return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
   }
 
-  await ctx.reply("Enter date that you require in this format YYYY-MM-DD");
+  await ctx.editMessageText(
+    "Enter date that you require in this format YYYY-MM-DD"
+  );
   return ctx.wizard.selectStep(steps.customDate);
 }
 
@@ -65,17 +71,32 @@ export async function customDate(ctx: Scenes.WizardContext) {
     return;
   }
 
+  /* HERE IS A BUG */
+
   if (!isValidDateFormat(ctx.message.text)) {
-    await ctx.reply(
-      "Wrong! Enter date that you require in this format YYYY-MM-DD"
-    );
+    const firstMessage =
+      "Wrong! Enter date that you require in this format YYYY-MM-DD";
+
+    const secondMessage = "NO";
+
+    // Check if 'fromValidation' flag exists
+    const state = ctx.wizard.state as DialogueState;
+
+    if (!state.fromValidation) {
+      state.fromValidation = true; // Set the flag
+      await ctx.editMessageText(firstMessage); // Send the first message
+      return;
+    }
+
+    await ctx.editMessageText(secondMessage); // Send the second message
+    state.fromValidation = false; // Reset the flag
     return;
   }
 
   (ctx.wizard.state as DailyFood).dateOfConsumption = new Date(
     ctx.message.text
   );
-  await ctx.reply(
+  await ctx.editMessageText(
     "Enter product's name and mass (in gram) in this format: NAME MASS (example: apple 100/red apple 0.9/sweet red apple 100/etc.)"
   );
   return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
@@ -85,9 +106,13 @@ export async function waitingForNameAndMassOfProduct(
   ctx: Scenes.WizardContext
 ) {
   const actualState = ctx.wizard.state as DailyFood;
-  const create = isCreateButton(ctx);
 
-  if (create) {
+  if (
+    ctx.callbackQuery &&
+    "data" in ctx.callbackQuery &&
+    ctx.callbackQuery.data === "create"
+  ) {
+    await ctx.answerCbQuery();
     let initalState = {} as DialogueState;
     initalState.name = actualState.name;
     return ctx.scene.enter("CREATE_PRODUCT", initalState);
@@ -100,9 +125,11 @@ export async function waitingForNameAndMassOfProduct(
   const productNameAndMass = IsInputStringAndNumber(ctx.message.text);
 
   if (productNameAndMass === null) {
-    await ctx.reply(
+    await deleteAndUpdateBotMessage(
+      ctx,
       "Wrong, write a product name and mass (in gram) in this format: NAME MASS (example: apple 100, red apple 100, sweet red apple 100 etc.)"
     );
+
     return;
   }
 
@@ -115,12 +142,7 @@ export async function waitingForNameAndMassOfProduct(
   );
 
   if (searchResults === null) {
-    await ctx.reply("This product does not exist in product database");
-    await ctx.reply(
-      `Create - to create ${actualState.name} in product database\n
-        Or try again and just enter the name of product`,
-      createButton
-    );
+    await deleteAndUpdateBotMessageCreate(ctx, createButton);
     return;
   }
 
@@ -133,7 +155,11 @@ export async function waitingForNameAndMassOfProduct(
 
   actualState.arrayOfProducts = searchResults;
   const chooseProductButton = getChooseProductButton(searchResults);
-  await ctx.reply("Did you mean one of these products?", chooseProductButton);
+  await deleteAndUpdateBotMessage(
+    ctx,
+    "Did you mean one of these products?",
+    chooseProductButton
+  );
 
   return ctx.wizard.selectStep(steps.productOptions);
 }
@@ -143,12 +169,11 @@ export async function productOptions(ctx: Scenes.WizardContext) {
     return;
   }
 
-  const actualState = ctx.wizard.state as DailyFood;
-
-  const tgId = actualState.tgId;
-
-  const callBackData = ctx.callbackQuery.data;
   await ctx.answerCbQuery();
+
+  const actualState = ctx.wizard.state as DailyFood;
+  const tgId = actualState.tgId;
+  const callBackData = ctx.callbackQuery.data;
 
   const foodElement = Object.values(actualState.arrayOfProducts).find(
     (product) => product._id!.toString() === callBackData

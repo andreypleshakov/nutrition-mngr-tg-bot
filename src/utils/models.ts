@@ -1,9 +1,8 @@
-export interface users {
+export type Users = {
   tgId: number;
   tgUserName?: string;
-}
-
-export interface FoodElement extends users {
+};
+export type FoodElement = Users & {
   _id?: string;
   name?: string;
   mass: number;
@@ -14,14 +13,12 @@ export interface FoodElement extends users {
   unsaturatedFat: number;
   carbs: number;
   fiber: number;
-}
-
-export interface ProductRaiting extends FoodElement {
+};
+export type ProductRaiting = FoodElement & {
   kcalPerProtein: number;
   kcalPerFiber: number;
-}
-
-export interface DialogueState extends FoodElement {
+};
+export type DialogueState = FoodElement & {
   updateProduct: boolean;
   fromDailyProduct: boolean;
   fromCombinedProduct: boolean;
@@ -32,29 +29,27 @@ export interface DialogueState extends FoodElement {
   listOfProducts: boolean;
   deleteConsumption: boolean;
   customMass: number;
-}
-
-export interface CostOfProtein {
+  botMessageId: number;
+  fromValidation: boolean;
+};
+export type CostOfProtein = {
   nameOfProduct: string;
   nameOfCurrency: string;
   cost: number;
   protein: number;
   massScope: number;
   totalMass: number;
-}
-
-export interface DailyFood extends FoodElement {
+};
+export type DailyFood = FoodElement & {
   dateOfConsumption: Date;
   arrayOfProducts: FoodElement[];
   arrayForDelete: string[];
-  objectProduct: {};
-}
-
-export interface CombinedProduct extends DialogueState {
+};
+export type CombinedProduct = DialogueState & {
   CombinedName: string;
   CombinedMass: number;
   products: Record<string, FoodElement>;
   actualProductName: string;
   actualProductMass: number;
   arrayOfProducts: FoodElement[];
-}
+};

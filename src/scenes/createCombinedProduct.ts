@@ -20,11 +20,9 @@ import {
   getYesOrNoButton,
   yesOrNoButton,
   doneButton,
-  isDoneButton,
   getFixButtonCombinedProduct,
   replaceAddOrIgnoreButton,
   createOrDoneButton,
-  isCreateButton,
   getChooseProductButton,
 } from "../utils/buttons";
 import {
@@ -113,22 +111,23 @@ export async function waitingForNameAndMassOfProduct(
 ) {
   const actualState = ctx.wizard.state as CombinedProduct;
 
-  const done = isDoneButton(ctx);
-  if (done) {
+  if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
     await ctx.answerCbQuery();
-    const fixButtonCombinedProduct = getFixButtonCombinedProduct(actualState);
-    await ctx.reply(
-      "Choose product that you want to fix or press Done to calculate",
-      fixButtonCombinedProduct
-    );
-    return ctx.wizard.selectStep(steps.fixingAndFinal);
-  }
 
-  const create = isCreateButton(ctx);
-  if (create) {
-    let initalState = {} as DialogueState;
-    initalState.name = (ctx.wizard.state as CombinedProduct).actualProductName;
-    return ctx.scene.enter("CREATE_PRODUCT", initalState);
+    if (ctx.callbackQuery.data === "bot-done") {
+      const fixButtonCombinedProduct = getFixButtonCombinedProduct(actualState);
+      await ctx.reply(
+        "Choose product that you want to fix or press Done to calculate",
+        fixButtonCombinedProduct
+      );
+      return ctx.wizard.selectStep(steps.fixingAndFinal);
+    }
+
+    if (ctx.callbackQuery.data === "create") {
+      let initalState = {} as DialogueState;
+      initalState.name = actualState.actualProductName;
+      return ctx.scene.enter("CREATE_PRODUCT", initalState);
+    }
   }
 
   if (!ctx.message || !("text" in ctx.message)) {

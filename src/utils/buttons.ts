@@ -1,7 +1,16 @@
 import { Markup } from "telegraf";
 import { CombinedProduct, FoodElement } from "./models";
 
-const webAppUrl = "https://google.com";
+export type ButtonType = {
+  reply_markup: {
+    inline_keyboard: {
+      text: string;
+      callback_data: string;
+    }[][];
+  };
+};
+
+const webAppUrl = "https://4286-87-253-62-93.ngrok-free.app";
 
 export const sceneButtons = {
   reply_markup: {
@@ -20,6 +29,13 @@ export const sceneButtons = {
           callback_data: "add-consumption",
         },
       ],
+
+      [
+        {
+          text: "Add custom consumption",
+          callback_data: "add-custom-consumption",
+        },
+      ],
       [
         {
           text: "Check consumtion statistic",
@@ -34,6 +50,12 @@ export const sceneButtons = {
       ],
       [
         {
+          text: "Set or check goal",
+          callback_data: "set-or-check-goal",
+        },
+      ],
+      [
+        {
           text: "Leave",
           callback_data: "leave",
         },
@@ -42,7 +64,7 @@ export const sceneButtons = {
   },
 };
 
-export const doneButton = {
+export const doneButton: ButtonType = {
   reply_markup: {
     inline_keyboard: [[{ text: "Done", callback_data: "bot-done" }]],
   },
@@ -153,13 +175,6 @@ export function getTypeOfStatisticButton() {
   ]);
 }
 
-export function isCreateButton(ctx: any): boolean {
-  if (ctx.callbackQuery !== undefined && ctx.callbackQuery.data === "create") {
-    return true;
-  }
-  return false;
-}
- 
 export function getFixButtonCombinedProduct(
   combinedProduct: CombinedProduct
 ): ReturnType<typeof Markup.inlineKeyboard> {
@@ -178,20 +193,7 @@ export function getFixButtonCombinedProduct(
 }
 
 export function getYesOrNoButton(ctx: any): boolean {
-  if (
-    ctx.callbackQuery !== undefined &&
-    (ctx.callbackQuery as any).data === "bot-yes"
-  ) {
-    return true;
-  }
-  return false;
-}
-
-export function isDoneButton(ctx: any): boolean {
-  if (
-    ctx.callbackQuery !== undefined &&
-    (ctx.callbackQuery as any).data === "bot-done"
-  ) {
+  if (ctx.callbackQuery !== undefined && ctx.callbackQuery.data === "bot-yes") {
     return true;
   }
   return false;

@@ -13,10 +13,12 @@
   "license": "ISC",
   "dependencies": {
     "@types/body-parser": "^1.19.5",
+    "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "ajv": "^8.16.0",
     "assert-ts": "^0.3.4",
     "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "google-auth-library": "^9.11.0",
