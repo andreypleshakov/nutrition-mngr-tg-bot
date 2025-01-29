@@ -33,6 +33,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(express.json());
 
 const PORT = 3001;
 
@@ -40,6 +41,7 @@ app.use("/users", userRoutes);
 app.use("/statistic", statisticRoutes);
 app.use("/goal", goalRoutes);
 app.use("/products", productsRoutes);
+
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 

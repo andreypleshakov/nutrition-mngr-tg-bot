@@ -2,17 +2,15 @@ import { DailyFood } from "../../utils/models";
 import { dailyFoodBase } from "../../utils/schemas";
 
 type TotalStatistic = {
-  totals: Omit<DailyFood, "arrayOfProducts" | "arrayForDelete">;
-  arrayOfProducts: Omit<DailyFood, "arrayOfProducts" | "arrayForDelete">[];
+  totals: DailyFood;
+  arrayOfProducts: DailyFood[];
 };
 
-export async function getDailyStatistic(tgId: number): Promise<TotalStatistic> {
-  const startDate = new Date();
-  startDate.setUTCHours(0, 0, 0, 0);
-
-  const endDate = new Date(startDate);
-  endDate.setDate(startDate.getDate() + 1);
-
+export async function getDailyStatistic(
+  tgId: number,
+  startDate: string,
+  endDate: string
+): Promise<TotalStatistic> {
   const filter = {
     dateOfConsumption: { $gte: startDate, $lt: endDate },
     tgId: tgId,
@@ -20,7 +18,7 @@ export async function getDailyStatistic(tgId: number): Promise<TotalStatistic> {
 
   const dailyStats = await dailyFoodBase.find(filter);
 
-  const initialVal: Omit<DailyFood, "arrayOfProducts" | "arrayForDelete"> = {
+  const initialVal: DailyFood = {
     dateOfConsumption: startDate,
     mass: 0,
     kcal: 0,
@@ -74,4 +72,12 @@ export async function deleteDailyStatistic(
   });
 
   return result.deletedCount || 0;
+}
+
+export async function addDailyStatistic(
+  consumedProduct: DailyFood
+): Promise<void> {
+  const newConsumedProduct = new dailyFoodBase(consumedProduct);
+  await newConsumedProduct.save();
+  return;
 }

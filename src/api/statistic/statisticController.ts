@@ -1,9 +1,14 @@
 import { Request, Response } from "express";
-import { deleteDailyStatistic, getDailyStatistic } from "./statisticService";
+import {
+  addDailyStatistic,
+  deleteDailyStatistic,
+  getDailyStatistic,
+} from "./statisticService";
 
 export async function getDailyStat(req: Request, res: Response) {
   const tgId = parseInt(req.params.tgId, 10);
-  const dailyStat = await getDailyStatistic(tgId);
+  const { startDate, endDate } = req.query;
+  const dailyStat = await getDailyStatistic(tgId, startDate as string, endDate as string);
   res.json(dailyStat);
 }
 
@@ -23,4 +28,9 @@ export async function deleteDailyStat(req: Request, res: Response) {
     console.error("Error deleting daily statistic:", error);
     res.status(500).json({ error: "Internal server error" });
   }
+}
+
+export async function postDailyStat(req: Request, res: Response) {
+  await addDailyStatistic(req.body);
+  res.status(200).json({ message: "Data received successfully!" });
 }

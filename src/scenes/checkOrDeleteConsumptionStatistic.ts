@@ -54,7 +54,7 @@ export async function optionsOfDateStatistic(ctx: Scenes.WizardContext) {
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + 1);
 
-    (ctx.wizard.state as DailyFood).dateOfConsumption = startDate;
+    (ctx.wizard.state as DailyFood).dateOfConsumption = startDate.toISOString();
     const typeOfStatisticButton = getTypeOfStatisticButton();
 
     await ctx.reply(
@@ -86,7 +86,7 @@ export async function customDateForStatistic(ctx: Scenes.WizardContext) {
   const startDate = new Date(customDateString);
   const endDate = new Date(startDate);
   endDate.setDate(startDate.getDate() + 1);
-  (ctx.wizard.state as DailyFood).dateOfConsumption = startDate;
+  (ctx.wizard.state as DailyFood).dateOfConsumption = startDate.toISOString();
   const typeOfStatisticButton = getTypeOfStatisticButton();
 
   await ctx.reply(
@@ -111,7 +111,7 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
   let deleteConsumption = (ctx.wizard.state as DialogueState).deleteConsumption;
   const startDate = (ctx.wizard.state as DailyFood).dateOfConsumption;
   const endDate = new Date(startDate);
-  endDate.setDate(startDate.getDate() + 1);
+  endDate.setDate(new Date(startDate).getDate() + 1);
 
   await ctx.answerCbQuery();
 
@@ -123,7 +123,7 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
         tgId,
         checkForList,
         startDate,
-        endDate,
+        endDate.toISOString(),
         ctx
       );
       break;
@@ -134,7 +134,7 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
         tgId,
         checkForList,
         startDate,
-        endDate,
+        endDate.toISOString(),
         ctx
       );
       break;
@@ -143,7 +143,7 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
       deleteConsumption = true;
       const foods = await deleteConsumptionStatisticByDateAnTgId(
         startDate,
-        endDate,
+        endDate.toISOString(),
         tgId
       );
 
@@ -153,9 +153,9 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
         return;
       }
 
-      (ctx.wizard.state as DailyFood).arrayOfProducts = foods;
+      (ctx.wizard.state as DialogueState).arrayOfProducts = foods;
 
-      const buttons = (ctx.wizard.state as DailyFood).arrayOfProducts.map(
+      const buttons = (ctx.wizard.state as DialogueState).arrayOfProducts.map(
         (food) => [
           Markup.button.callback(
             `${food.name}: ${food.mass}g`,
@@ -180,11 +180,11 @@ export async function deleteConsumedProduct(ctx: Scenes.WizardContext) {
 
   await ctx.answerCbQuery();
 
-  let arrayOfProducts = (ctx.wizard.state as DailyFood).arrayOfProducts;
-  let arrayForDelete = (ctx.wizard.state as DailyFood).arrayForDelete;
+  let arrayOfProducts = (ctx.wizard.state as DialogueState).arrayOfProducts;
+  let arrayForDelete = (ctx.wizard.state as DialogueState).arrayForDelete;
 
   if (ctx.callbackQuery.data === "Done") {
-    const filter = (ctx.wizard.state as DailyFood).arrayForDelete;
+    const filter = (ctx.wizard.state as DialogueState).arrayForDelete;
     await dailyFoodBase.deleteMany({
       _id: { $in: filter },
       tgId: (ctx.wizard.state as DailyFood).tgId,
@@ -207,7 +207,7 @@ export async function deleteConsumedProduct(ctx: Scenes.WizardContext) {
 
   arrayForDelete.push(foundObject!._id!);
 
-  (ctx.wizard.state as DailyFood).arrayForDelete = arrayForDelete;
+  (ctx.wizard.state as DialogueState).arrayForDelete = arrayForDelete;
 
   const index = arrayOfProducts.findIndex(
     (obj) => obj._id!.toString() === targetId
@@ -215,11 +215,11 @@ export async function deleteConsumedProduct(ctx: Scenes.WizardContext) {
 
   arrayOfProducts.splice(index, 1);
 
-  (ctx.wizard.state as DailyFood).arrayOfProducts = arrayOfProducts;
+  (ctx.wizard.state as DialogueState).arrayOfProducts = arrayOfProducts;
 
   (ctx.wizard.state as DialogueState).fromPreparationToDelete = true;
 
-  const buttons = (ctx.wizard.state as DailyFood).arrayOfProducts.map(
+  const buttons = (ctx.wizard.state as DialogueState).arrayOfProducts.map(
     (food) => [
       Markup.button.callback(
         `${food.name}: ${food.mass}g`,

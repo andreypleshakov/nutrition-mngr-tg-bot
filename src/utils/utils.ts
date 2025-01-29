@@ -471,7 +471,6 @@ export async function calculateDailyConsumption(
   const mass = dailyState.mass;
   const productName = product.name;
   const date = dailyState.dateOfConsumption;
-  // const tgId = product.tgId;
 
   const sumNutrition =
     product.protein * mass + product.totalFat * mass + product.carbs * mass;
@@ -604,11 +603,11 @@ export async function existanceOfUser(userId: number): Promise<boolean> {
 export async function getConsumptionStatisticByDateAnTgId(
   tgId: number,
   checkForList: boolean,
-  startDate: Date,
-  endDate: Date,
+  startDate: string,
+  endDate: string,
   ctx: Scenes.WizardContext
 ): Promise<void> {
-  const customDateString = formatDate(startDate);
+  const customDateString = formatDate(new Date(startDate));
 
   const filter = {
     dateOfConsumption: { $gte: startDate, $lt: endDate },
@@ -712,8 +711,8 @@ Unsaturated fats: ${totals.unsatFatPercent}%`;
 }
 
 export async function deleteConsumptionStatisticByDateAnTgId(
-  startDate: Date,
-  endDate: Date,
+  startDate: string,
+  endDate: string,
   tgId: number
 ) {
   const filter = {
@@ -721,37 +720,8 @@ export async function deleteConsumptionStatisticByDateAnTgId(
     tgId: tgId,
   };
 
-  const foods = await dailyFoodBase.find(filter);
-
-  const updatedFoods: FoodElement[] = foods.map(
-    ({
-      _id,
-      name,
-      mass,
-      kcal,
-      protein,
-      saturatedFat,
-      unsaturatedFat,
-      totalFat,
-      carbs,
-      fiber,
-      tgId,
-    }) => ({
-      _id,
-      name,
-      mass,
-      kcal,
-      protein,
-      saturatedFat,
-      unsaturatedFat,
-      totalFat,
-      carbs,
-      fiber,
-      tgId,
-    })
-  );
-
-  return updatedFoods;
+  const foods: FoodElement[] = await dailyFoodBase.find(filter).lean();
+  return foods;
 }
 
 export async function findTopTenProducts(typeOfCheck: string) {

@@ -31,6 +31,8 @@ export type DialogueState = FoodElement & {
   customMass: number;
   botMessageId: number;
   fromValidation: boolean;
+  arrayOfProducts: FoodElement[];
+  arrayForDelete: string[];
 };
 export type CostOfProtein = {
   nameOfProduct: string;
@@ -41,9 +43,7 @@ export type CostOfProtein = {
   totalMass: number;
 };
 export type DailyFood = FoodElement & {
-  dateOfConsumption: Date;
-  arrayOfProducts: FoodElement[];
-  arrayForDelete: string[];
+  dateOfConsumption: string;
 };
 export type CombinedProduct = DialogueState & {
   CombinedName: string;

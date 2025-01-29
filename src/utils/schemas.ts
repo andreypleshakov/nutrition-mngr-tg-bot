@@ -23,7 +23,7 @@ const userSchema = new Schema<Users>({
 export const userBase = model<Users>("userBase", userSchema);
 
 const dailyFoodSchema = new Schema<DailyFood>({
-  dateOfConsumption: { type: Date, required: true },
+  dateOfConsumption: { type: String, required: true },
   mass: { type: Number, required: true },
   ...defaultSchemaParameters,
 });
