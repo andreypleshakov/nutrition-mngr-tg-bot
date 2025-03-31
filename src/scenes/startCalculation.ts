@@ -30,7 +30,11 @@ export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
       }
     }
 
-    await ctx.reply("Select scene that you want to enter", sceneButtons);
+    const sM = await ctx.reply(
+      "Select scene that you want to enter",
+      sceneButtons
+    );
+    console.log("1", sM.message_id);
     return ctx.wizard.next();
   },
 

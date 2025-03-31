@@ -23,11 +23,12 @@ const rawPassword =
     ? process.env.MONGODB_ADMIN_PASSWORD
     : "";
 const encoderedPassword = encodeURIComponent(rawPassword);
+const webAppUrlTest = process.env.WEB_APP_URL_TEST;
 
 const app = express();
 
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: [webAppUrlTest!],
   methods: ["GET", "POST", "DELETE"],
   credentials: true,
 };
@@ -41,7 +42,6 @@ app.use("/users", userRoutes);
 app.use("/statistic", statisticRoutes);
 app.use("/goal", goalRoutes);
 app.use("/products", productsRoutes);
-
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 

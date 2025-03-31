@@ -2,6 +2,7 @@ export type Users = {
   tgId: number;
   tgUserName?: string;
 };
+
 export type FoodElement = Users & {
   _id?: string;
   name?: string;
@@ -13,12 +14,15 @@ export type FoodElement = Users & {
   unsaturatedFat: number;
   carbs: number;
   fiber: number;
+  status?: "primal" | "custom";
+  typeOfFood?: "product" | "meal";
 };
+
 export type ProductRaiting = FoodElement & {
   kcalPerProtein: number;
   kcalPerFiber: number;
 };
-export type DialogueState = FoodElement & {
+export type DialogueState = Pick<FoodElement, "name" | "tgId"> & {
   updateProduct: boolean;
   fromDailyProduct: boolean;
   fromCombinedProduct: boolean;
@@ -34,6 +38,7 @@ export type DialogueState = FoodElement & {
   arrayOfProducts: FoodElement[];
   arrayForDelete: string[];
 };
+
 export type CostOfProtein = {
   nameOfProduct: string;
   nameOfCurrency: string;
@@ -42,9 +47,11 @@ export type CostOfProtein = {
   massScope: number;
   totalMass: number;
 };
+
 export type DailyFood = FoodElement & {
   dateOfConsumption: string;
 };
+
 export type CombinedProduct = DialogueState & {
   CombinedName: string;
   CombinedMass: number;
@@ -52,4 +59,8 @@ export type CombinedProduct = DialogueState & {
   actualProductName: string;
   actualProductMass: number;
   arrayOfProducts: FoodElement[];
+};
+
+export type PrimalFoodElement = FoodElement & {
+  allowedUsersTgId: number[];
 };

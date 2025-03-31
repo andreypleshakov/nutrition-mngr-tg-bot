@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { Users, DailyFood, FoodElement } from "./models";
+import { Users, DailyFood, FoodElement, PrimalFoodElement } from "./models";
 
 const defaultSchemaParameters = {
   name: { type: String, required: true },
@@ -11,9 +11,24 @@ const defaultSchemaParameters = {
   carbs: { type: Number, default: 0, required: true },
   fiber: { type: Number, default: 0, required: true },
   tgId: { type: Number, required: true },
+  status: {
+    type: String,
+    enum: ["primal", "custom"],
+    required: true,
+    default: "custom",
+  },
+  typeOfFood: {
+    type: String,
+    enum: ["product", "meal"],
+    required: true,
+    default: "product",
+  },
 };
 
-const { name, ...nutritionGoalFields } = defaultSchemaParameters;
+const { name, status, typeOfFood, ...nutritionGoalFields } =
+  defaultSchemaParameters;
+
+const { tgId, ...primalProductBaseFields } = defaultSchemaParameters;
 
 const userSchema = new Schema<Users>({
   tgId: { type: Number, required: true, unique: true },
@@ -43,3 +58,13 @@ const nutritionGoalSchema = new Schema<FoodElement>({
 });
 
 export const goalBase = model<FoodElement>("goalBase", nutritionGoalSchema);
+
+const primalProductBaseSchema = new Schema<PrimalFoodElement>({
+  ...primalProductBaseFields,
+  allowedUsersTgId: [{ type: Number, required: true }],
+});
+
+export const primalProductBase = model<PrimalFoodElement>(
+  "primalProductBase",
+  primalProductBaseSchema
+);

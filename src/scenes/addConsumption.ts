@@ -53,7 +53,8 @@ export async function todayOrCustomDate(ctx: Scenes.WizardContext) {
   const callBackData = ctx.callbackQuery.data;
 
   if (callBackData === "today") {
-    (ctx.wizard.state as DailyFood).dateOfConsumption = new Date().toISOString();
+    (ctx.wizard.state as DailyFood).dateOfConsumption =
+      new Date().toISOString();
     await ctx.editMessageText(
       "Enter product's name and mass (in gram) in this format: NAME MASS (example: apple 100/red apple 0.9/sweet red apple 100/etc.)"
     );
@@ -96,7 +97,8 @@ export async function customDate(ctx: Scenes.WizardContext) {
   (ctx.wizard.state as DailyFood).dateOfConsumption = new Date(
     ctx.message.text
   ).toISOString();
-  await ctx.editMessageText(
+
+  await ctx.reply(
     "Enter product's name and mass (in gram) in this format: NAME MASS (example: apple 100/red apple 0.9/sweet red apple 100/etc.)"
   );
   return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
@@ -106,7 +108,7 @@ export async function waitingForNameAndMassOfProduct(
   ctx: Scenes.WizardContext
 ) {
   const actualState = ctx.wizard.state as DailyFood;
-  const dialogueState = ctx.wizard.state as DialogueState
+  const dialogueState = ctx.wizard.state as DialogueState;
 
   if (
     ctx.callbackQuery &&
@@ -173,7 +175,7 @@ export async function productOptions(ctx: Scenes.WizardContext) {
   await ctx.answerCbQuery();
 
   const actualState = ctx.wizard.state as DailyFood;
-  const dialogueState = ctx.wizard.state as DialogueState
+  const dialogueState = ctx.wizard.state as DialogueState;
   const tgId = actualState.tgId;
   const callBackData = ctx.callbackQuery.data;
 

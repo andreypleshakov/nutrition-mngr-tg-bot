@@ -1,5 +1,6 @@
 import { Markup } from "telegraf";
 import { CombinedProduct, FoodElement } from "./models";
+import "dotenv/config";
 
 export type ButtonType = {
   reply_markup: {
@@ -10,7 +11,7 @@ export type ButtonType = {
   };
 };
 
-const webAppUrl = "https://4286-87-253-62-93.ngrok-free.app";
+const webAppUrl = process.env.WEB_APP_URL_TEST!;
 
 export const sceneButtons = {
   reply_markup: {

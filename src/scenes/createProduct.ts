@@ -359,7 +359,13 @@ export async function fixingSomethingAndFinal(ctx: Scenes.WizardContext) {
     case "done":
       type NutrientKeys = Exclude<
         keyof FoodElement,
-        "name" | "tgId" | "documentId" | "tgUserName" | "_id"
+        | "name"
+        | "tgId"
+        | "documentId"
+        | "tgUserName"
+        | "_id"
+        | "status"
+        | "typeOfFood"
       >;
 
       const nutrientKeys: NutrientKeys[] = [
