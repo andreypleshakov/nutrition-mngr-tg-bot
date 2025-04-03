@@ -1,6 +1,11 @@
 import { Scenes } from "telegraf";
-import { DialogueState } from "../utils/models";
-import { userBase } from "../utils/schemas";
+import { IDialogueState, InitialState } from "../utils/models";
+import {
+  ConsumedProduct,
+  PrimalProduct,
+  User,
+  UsersProduct,
+} from "../utils/schemas";
 import { existanceOfUser } from "../utils/utils";
 import { sceneButtons } from "../utils/buttons";
 
@@ -8,6 +13,7 @@ export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
   "START_CALCULATION",
 
   async (ctx) => {
+
     if (ctx.from) {
       const { id: userId, username: userName } = ctx.from;
 
@@ -20,8 +26,14 @@ export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
             ...(userName && { tgUserName: userName }),
           };
 
-          const newUser = new userBase(userData);
+          const newUser = new User(userData);
           await newUser.save();
+
+          await PrimalProduct.updateMany(
+            {},
+            { $addToSet: { allowedUsersTgId: userId } }
+          );
+
           await ctx.reply("Select scene that you want to enter", sceneButtons);
           return ctx.wizard.next();
         }
@@ -30,11 +42,11 @@ export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
       }
     }
 
-    const sM = await ctx.reply(
+    const mainMessage = await ctx.reply(
       "Select scene that you want to enter",
       sceneButtons
     );
-    console.log("1", sM.message_id);
+    (ctx.wizard.state as IDialogueState).mainMessageId = mainMessage.message_id;
     return ctx.wizard.next();
   },
 
@@ -43,24 +55,26 @@ export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
       return;
     }
 
-    const fromStartingScene = { fromStartingScene: true } as DialogueState;
-    const callBackData = ctx.callbackQuery.data;
+    const fromMainSceneData: InitialState = {
+      mainMessageId: (ctx.wizard.state as IDialogueState).mainMessageId,
+      fromStartingScene: true,
+    };
 
     await ctx.answerCbQuery();
 
-    switch (callBackData) {
+    switch (ctx.callbackQuery.data) {
       case "create-product":
-        return ctx.scene.enter("CREATE_PRODUCT", fromStartingScene);
+        return ctx.scene.enter("CREATE_PRODUCT", fromMainSceneData);
       case "create-combined-product":
-        return ctx.scene.enter("CREATE_COMBINED_PRODUCT", fromStartingScene);
+        return ctx.scene.enter("CREATE_COMBINED_PRODUCT", fromMainSceneData);
       case "add-consumption":
-        return ctx.scene.enter("ADD_CONSUMPTION", fromStartingScene);
+        return ctx.scene.enter("ADD_CONSUMPTION", fromMainSceneData);
       case "add-custom-consumption":
-        return ctx.scene.enter("ADD_CUSTOM_CONSUMPTION", fromStartingScene);
+        return ctx.scene.enter("ADD_CUSTOM_CONSUMPTION", fromMainSceneData);
       case "check-consumption-statistic":
         return ctx.scene.enter(
           "CHECK_OR_DELETE_CONSUMPTION_STATISTIC",
-          fromStartingScene
+          fromMainSceneData
         );
       case "best-protein-fiber":
         return ctx.scene.enter("PRODUCT_RAITING");

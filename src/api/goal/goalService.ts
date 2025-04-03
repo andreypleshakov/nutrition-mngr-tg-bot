@@ -1,8 +1,8 @@
-import { FoodElement } from "../../utils/models";
-import { goalBase } from "../../utils/schemas";
+import { IProduct } from "../../utils/models";
+import { Goal } from "../../utils/schemas";
 
 export async function getUserGoal(tgId: number) {
-  let userGoal: Omit<FoodElement, "mass"> = {
+  let userGoal: Omit<IProduct, "mass"> = {
     kcal: 0,
     protein: 0,
     totalFat: 0,
@@ -13,7 +13,7 @@ export async function getUserGoal(tgId: number) {
     tgId: tgId,
   };
 
-  const fetchedGoal = await goalBase.findOne({
+  const fetchedGoal = await Goal.findOne({
     tgId: tgId,
   });
 

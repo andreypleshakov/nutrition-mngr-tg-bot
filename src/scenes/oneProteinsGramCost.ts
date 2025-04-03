@@ -3,8 +3,9 @@ import {
   isValidNumberString,
   replaceCommaToDot,
   IsInputStringAndNumber,
+  handleFromStartingScene,
 } from "../utils/utils";
-import { CostOfProtein } from "../utils/models";
+import { ICostOfProtein, InitialState } from "../utils/models";
 import { perButton } from "../utils/buttons";
 import {
   oneProteinsGramCostStepsList,
@@ -18,6 +19,10 @@ export const costOfOneProteinsGram =
   );
 
 export async function startingDialogue(ctx: Scenes.WizardContext) {
+  if (!(ctx.scene.state as InitialState).fromStartingScene) {
+    return await handleFromStartingScene(ctx);
+  }
+
   await ctx.reply("Name of product");
   return ctx.wizard.selectStep(steps.nameOfProduct);
 }
@@ -27,7 +32,7 @@ export async function nameOfProduct(ctx: Scenes.WizardContext) {
     await ctx.reply("Wrong, write a product name");
     return;
   }
-  (ctx.wizard.state as CostOfProtein).nameOfProduct = ctx.message.text.trim();
+  (ctx.wizard.state as ICostOfProtein).nameOfProduct = ctx.message.text.trim();
   await ctx.reply(
     "Choose the scope of mass you want to calculate nutrition PER 100 or PER CUSTOM",
     perButton
@@ -43,7 +48,7 @@ export async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
   await ctx.answerCbQuery();
 
   if (callBackData === "100-gram") {
-    (ctx.wizard.state as CostOfProtein).massScope = 100;
+    (ctx.wizard.state as ICostOfProtein).massScope = 100;
     await ctx.reply("Protein per 100 gram");
     return ctx.wizard.selectStep(steps.proteinPerSelectedMass);
   } else if (callBackData === "custom-mass") {
@@ -69,7 +74,7 @@ export async function customMass(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as CostOfProtein).massScope = customMass;
+  (ctx.wizard.state as ICostOfProtein).massScope = customMass;
 
   await ctx.reply(`Protein per ${customMass} gram`);
   return ctx.wizard.selectStep(steps.proteinPerSelectedMass);
@@ -85,7 +90,7 @@ export async function proteinPerSelectedMass(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as CostOfProtein).protein = replaceCommaToDot(
+  (ctx.wizard.state as ICostOfProtein).protein = replaceCommaToDot(
     ctx.message.text
   );
 
@@ -102,7 +107,7 @@ export async function totalMassOfProduct(ctx: Scenes.WizardContext) {
     await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
     return;
   }
-  (ctx.wizard.state as CostOfProtein).totalMass = replaceCommaToDot(
+  (ctx.wizard.state as ICostOfProtein).totalMass = replaceCommaToDot(
     ctx.message.text
   );
   await ctx.reply(
@@ -130,8 +135,9 @@ export async function costOfProduct(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as CostOfProtein).nameOfCurrency = currencyAmountAndName[0]; // usd
-  (ctx.wizard.state as CostOfProtein).cost = currencyAmountAndName[1]; // 100
+  (ctx.wizard.state as ICostOfProtein).nameOfCurrency =
+    currencyAmountAndName[0]; // usd
+  (ctx.wizard.state as ICostOfProtein).cost = currencyAmountAndName[1]; // 100
 
   const fixButtonCostOfProtein = {
     reply_markup: {
@@ -141,7 +147,7 @@ export async function costOfProduct(ctx: Scenes.WizardContext) {
         [
           {
             text: `Protein per ${
-              (ctx.wizard.state as CostOfProtein).massScope
+              (ctx.wizard.state as ICostOfProtein).massScope
             } `,
             callback_data: "protein-per-scope",
           },
@@ -191,5 +197,5 @@ export async function fixingOrFinal(ctx: Scenes.WizardContext) {
 }
 
 export async function finalCalculation(ctx: Scenes.WizardContext) {
-  const actualState = ctx.wizard.state as CostOfProtein;
+  const actualState = ctx.wizard.state as ICostOfProtein;
 }

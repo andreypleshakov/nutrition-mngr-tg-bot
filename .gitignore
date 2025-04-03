@@ -1,6 +1,7 @@
-node_modules/
+node_modules
+.dockerignore
 .env
 .env.prod
-nutrition-manager-bot.json
-nutrition-manager-test.json
-.vscode
+pnpm-lock.yaml
+.git
+Dockerfile

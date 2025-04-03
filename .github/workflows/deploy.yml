@@ -1,0 +1,25 @@
+name: Deploy Telegram Bot to Google Cloud VM
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3
+
+      - name: Connect to Google VM and redeploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.GCE_INSTANCE_IP }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/pleshakov/nutrition-mngr-tg-bot
+            git pull origin master
+            docker-compose down
+            docker-compose up -d --build

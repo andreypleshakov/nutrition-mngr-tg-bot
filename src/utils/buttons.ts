@@ -1,5 +1,5 @@
 import { Markup } from "telegraf";
-import { CombinedProduct, FoodElement } from "./models";
+import { IMeal, IProduct } from "./models";
 import "dotenv/config";
 
 export type ButtonType = {
@@ -16,7 +16,7 @@ const webAppUrl = process.env.WEB_APP_URL_TEST!;
 export const sceneButtons = {
   reply_markup: {
     inline_keyboard: [
-      [{ text: "Open WebApp", web_app: { url: webAppUrl } }],
+      // [{ text: "Open WebApp", web_app: { url: webAppUrl } }],
       [{ text: "Create product", callback_data: "create-product" }],
       [
         {
@@ -43,24 +43,24 @@ export const sceneButtons = {
           callback_data: "check-consumption-statistic",
         },
       ],
-      [
-        {
-          text: "Check best protein/fiber product",
-          callback_data: "best-protein-fiber",
-        },
-      ],
-      [
-        {
-          text: "Set or check goal",
-          callback_data: "set-or-check-goal",
-        },
-      ],
-      [
-        {
-          text: "Leave",
-          callback_data: "leave",
-        },
-      ],
+      // [
+      //   {
+      //     text: "Check best protein/fiber product",
+      //     callback_data: "best-protein-fiber",
+      //   },
+      // ],
+      // [
+      //   {
+      //     text: "Set or check goal",
+      //     callback_data: "set-or-check-goal",
+      //   },
+      // ],
+      // [
+      //   {
+      //     text: "Leave",
+      //     callback_data: "leave",
+      //   },
+      // ],
     ],
   },
 };
@@ -108,7 +108,7 @@ export const typeOfRaing = {
   },
 };
 
-export function getfixButtonProductBase(actualState: FoodElement) {
+export function getfixButtonProductBase(actualState: IProduct) {
   return Markup.inlineKeyboard([
     [Markup.button.callback(`Name: ${actualState.name}`, "name")],
     [Markup.button.callback(`Kcal: ${actualState.kcal}`, "kcal")],
@@ -177,7 +177,7 @@ export function getTypeOfStatisticButton() {
 }
 
 export function getFixButtonCombinedProduct(
-  combinedProduct: CombinedProduct
+  combinedProduct: IMeal
 ): ReturnType<typeof Markup.inlineKeyboard> {
   const buttons = Object.values(combinedProduct.products).map((product) => [
     Markup.button.callback(

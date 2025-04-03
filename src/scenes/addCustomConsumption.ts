@@ -3,7 +3,7 @@ import {
   addCustomConsumptionStepsList,
   steps,
 } from "../steps-middlewares/addCustomConsumptionSteps";
-import { DailyFood } from "../utils/models";
+import { IConsumedProduct, InitialState } from "../utils/models";
 import {
   handleFromStartingScene,
   isValidDateFormat,
@@ -11,7 +11,7 @@ import {
   replaceCommaToDot,
 } from "../utils/utils";
 import { todayOrCustomDateButton } from "../utils/buttons";
-import { dailyFoodBase } from "../utils/schemas";
+import { ConsumedProduct } from "../utils/schemas";
 
 export const addCustomConsumption =
   new Scenes.WizardScene<Scenes.WizardContext>(
@@ -20,13 +20,11 @@ export const addCustomConsumption =
   );
 
 export async function startingDialogue(ctx: Scenes.WizardContext) {
-  (ctx.wizard.state as DailyFood).tgId = ctx.from!.id;
-
-  const fromStartingScene = await handleFromStartingScene(ctx);
-
-  if (fromStartingScene) {
-    return;
+  if (!(ctx.scene.state as InitialState).fromStartingScene) {
+    return await handleFromStartingScene(ctx);
   }
+
+  (ctx.wizard.state as IConsumedProduct).tgId = ctx.from!.id;
 
   await ctx.reply(
     "TODAY - add today's consumption statistic\n" +
@@ -45,7 +43,7 @@ export async function todayOrCustomDate(ctx: Scenes.WizardContext) {
   await ctx.answerCbQuery();
 
   if (callBackData === "today") {
-    (ctx.wizard.state as DailyFood).dateOfConsumption =
+    (ctx.wizard.state as IConsumedProduct).dateOfConsumption =
       new Date().toISOString();
     await ctx.reply(
       "Enter product's name and mass (in gram) in this format: NAME MASS (example: apple 100/red apple 0.9/sweet red apple 100/etc.)"
@@ -69,7 +67,7 @@ export async function customDate(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as DailyFood).dateOfConsumption = new Date(
+  (ctx.wizard.state as IConsumedProduct).dateOfConsumption = new Date(
     ctx.message.text
   ).toISOString();
   await ctx.reply(
@@ -85,10 +83,10 @@ export async function waitingForNameAndMassOfProduct(
     return;
   }
 
-  (ctx.wizard.state as DailyFood).name = ctx.message.text.trim();
+  (ctx.wizard.state as IConsumedProduct).name = ctx.message.text.trim();
 
   await ctx.reply(
-    `Enter total mass of ${(ctx.wizard.state as DailyFood).name}`
+    `Enter total mass of ${(ctx.wizard.state as IConsumedProduct).name}`
   );
   return ctx.wizard.selectStep(steps.mass);
 }
@@ -103,10 +101,12 @@ export async function mass(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as DailyFood).mass = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IConsumedProduct).mass = replaceCommaToDot(
+    ctx.message.text
+  );
 
   await ctx.reply(
-    `Enter total kcal of ${(ctx.wizard.state as DailyFood).name}`
+    `Enter total kcal of ${(ctx.wizard.state as IConsumedProduct).name}`
   );
 
   return ctx.wizard.selectStep(steps.kcal);
@@ -122,10 +122,12 @@ export async function kcal(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as DailyFood).kcal = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IConsumedProduct).kcal = replaceCommaToDot(
+    ctx.message.text
+  );
 
   await ctx.reply(
-    `Enter total protein of ${(ctx.wizard.state as DailyFood).name}`
+    `Enter total protein of ${(ctx.wizard.state as IConsumedProduct).name}`
   );
 
   return ctx.wizard.selectStep(steps.protein);
@@ -141,9 +143,13 @@ export async function protein(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as DailyFood).protein = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IConsumedProduct).protein = replaceCommaToDot(
+    ctx.message.text
+  );
 
-  await ctx.reply(`Enter total fat of ${(ctx.wizard.state as DailyFood).name}`);
+  await ctx.reply(
+    `Enter total fat of ${(ctx.wizard.state as IConsumedProduct).name}`
+  );
 
   return ctx.wizard.selectStep(steps.totalFat);
 }
@@ -158,12 +164,14 @@ export async function totalFat(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as DailyFood).totalFat = replaceCommaToDot(
+  (ctx.wizard.state as IConsumedProduct).totalFat = replaceCommaToDot(
     ctx.message.text
   );
 
   await ctx.reply(
-    `Enter total saturated fat of ${(ctx.wizard.state as DailyFood).name}`
+    `Enter total saturated fat of ${
+      (ctx.wizard.state as IConsumedProduct).name
+    }`
   );
 
   return ctx.wizard.selectStep(steps.satAndUnsatFat);
@@ -179,16 +187,16 @@ export async function satAndUnsatFat(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as DailyFood).saturatedFat = replaceCommaToDot(
+  (ctx.wizard.state as IConsumedProduct).saturatedFat = replaceCommaToDot(
     ctx.message.text
   );
 
-  (ctx.wizard.state as DailyFood).unsaturatedFat =
-    (ctx.wizard.state as DailyFood).totalFat -
-    (ctx.wizard.state as DailyFood).saturatedFat;
+  (ctx.wizard.state as IConsumedProduct).unsaturatedFat =
+    (ctx.wizard.state as IConsumedProduct).totalFat -
+    (ctx.wizard.state as IConsumedProduct).saturatedFat;
 
   await ctx.reply(
-    `Enter total carbs of ${(ctx.wizard.state as DailyFood).name}`
+    `Enter total carbs of ${(ctx.wizard.state as IConsumedProduct).name}`
   );
 
   return ctx.wizard.selectStep(steps.carbs);
@@ -204,10 +212,12 @@ export async function carbs(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as DailyFood).carbs = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IConsumedProduct).carbs = replaceCommaToDot(
+    ctx.message.text
+  );
 
   await ctx.reply(
-    `Enter total fiber of ${(ctx.wizard.state as DailyFood).name}`
+    `Enter total fiber of ${(ctx.wizard.state as IConsumedProduct).name}`
   );
 
   return ctx.wizard.selectStep(steps.fiber);
@@ -223,9 +233,11 @@ export async function fiber(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as DailyFood).fiber = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IConsumedProduct).fiber = replaceCommaToDot(
+    ctx.message.text
+  );
 
-  const actualState = ctx.wizard.state as DailyFood;
+  const actualState = ctx.wizard.state as IConsumedProduct;
 
   const nutritionDetails = {
     dateOfConsumption: actualState.dateOfConsumption,
@@ -241,7 +253,7 @@ export async function fiber(ctx: Scenes.WizardContext) {
     tgId: actualState.tgId,
   };
 
-  const newDate = new dailyFoodBase(nutritionDetails);
+  const newDate = new ConsumedProduct(nutritionDetails);
 
   await newDate.save();
 

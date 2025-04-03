@@ -1,9 +1,9 @@
-import { userBase } from "../../utils/schemas";
+import { User } from "../../utils/schemas";
 
 export async function getAllUsers() {
-  return await userBase.find();
+  return await User.find();
 }
 
 export async function getUserByTgId(tgId: number) {
-  return await userBase.findOne({ tgId: tgId });
+  return await User.findOne({ tgId: tgId });
 }

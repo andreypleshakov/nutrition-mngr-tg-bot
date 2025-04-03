@@ -1,5 +1,6 @@
 import { Telegraf, Scenes, session } from "telegraf";
 import "dotenv/config";
+import dotenv from "dotenv";
 import assert from "assert-ts";
 import { addConsumption } from "./scenes/addConsumption";
 import { createProduct } from "./scenes/createProduct";
@@ -23,27 +24,27 @@ const rawPassword =
     ? process.env.MONGODB_ADMIN_PASSWORD
     : "";
 const encoderedPassword = encodeURIComponent(rawPassword);
-const webAppUrlTest = process.env.WEB_APP_URL_TEST;
+// const webAppUrlTest = process.env.WEB_APP_URL_TEST;
 
 const app = express();
 
-const corsOptions = {
-  origin: [webAppUrlTest!],
-  methods: ["GET", "POST", "DELETE"],
-  credentials: true,
-};
+// const corsOptions = {
+//   origin: [webAppUrlTest!],
+//   methods: ["GET", "POST", "DELETE"],
+//   credentials: true,
+// };
 
-app.use(cors(corsOptions));
-app.use(express.json());
+// app.use(cors(corsOptions));
+// app.use(express.json());
 
-const PORT = 3001;
+// const PORT = 3001;
 
-app.use("/users", userRoutes);
-app.use("/statistic", statisticRoutes);
-app.use("/goal", goalRoutes);
-app.use("/products", productsRoutes);
+// app.use("/users", userRoutes);
+// app.use("/statistic", statisticRoutes);
+// app.use("/goal", goalRoutes);
+// app.use("/products", productsRoutes);
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 mongoose
   .connect(
@@ -54,14 +55,12 @@ mongoose
     console.error(error);
   });
 
+dotenv.config({
+  path: process.env.NODE_ENV === "production" ? ".env.prod" : ".env",
+});
+
 const tgToken = process.env.TG_BOT_TOKEN;
 assert(tgToken != null, "No TG_BOT_TOKEN environment variable found");
-
-const nutritionMgrEmail = process.env.NUTRITION_MGR_EMAIL;
-assert(
-  nutritionMgrEmail != null,
-  "No NUTRITION_MGR_EMAIL environment variable found"
-);
 
 const bot = new Telegraf<Scenes.WizardContext>(tgToken!);
 

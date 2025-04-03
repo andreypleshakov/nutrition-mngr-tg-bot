@@ -3,9 +3,9 @@ import {
   setOrCheckGoalStepsList,
   steps,
 } from "../steps-middlewares/setOrCheckGoalSteps";
-import { FoodElement } from "../utils/models";
+import { IProduct } from "../utils/models";
 import { isValidNumberString, replaceCommaToDot } from "../utils/utils";
-import { goalBase } from "../utils/schemas";
+import { Goal } from "../utils/schemas";
 
 export const setOrCheckGoal = new Scenes.WizardScene<Scenes.WizardContext>(
   "SET_OR_CHECK_GOAL",
@@ -13,7 +13,7 @@ export const setOrCheckGoal = new Scenes.WizardScene<Scenes.WizardContext>(
 );
 
 export async function startingDialogue(ctx: Scenes.WizardContext) {
-  (ctx.wizard.state as FoodElement).tgId = ctx.from!.id;
+  (ctx.wizard.state as IProduct).tgId = ctx.from!.id;
 
   await ctx.reply("Set kcal goal");
   return ctx.wizard.selectStep(steps.setKcal);
@@ -29,7 +29,7 @@ export async function setKcal(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as FoodElement).kcal = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IProduct).kcal = replaceCommaToDot(ctx.message.text);
   await ctx.reply("Set protein goal");
   return ctx.wizard.selectStep(steps.setProtein);
 }
@@ -44,9 +44,7 @@ export async function setProtein(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as FoodElement).protein = replaceCommaToDot(
-    ctx.message.text
-  );
+  (ctx.wizard.state as IProduct).protein = replaceCommaToDot(ctx.message.text);
   await ctx.reply("Set total fat goal");
   return ctx.wizard.selectStep(steps.setTotalFat);
 }
@@ -61,9 +59,7 @@ export async function setTotalFat(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as FoodElement).totalFat = replaceCommaToDot(
-    ctx.message.text
-  );
+  (ctx.wizard.state as IProduct).totalFat = replaceCommaToDot(ctx.message.text);
   await ctx.reply("Set saturated fat goal");
   return ctx.wizard.selectStep(steps.setSatFat);
 }
@@ -78,7 +74,7 @@ export async function setSatFat(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as FoodElement).saturatedFat = replaceCommaToDot(
+  (ctx.wizard.state as IProduct).saturatedFat = replaceCommaToDot(
     ctx.message.text
   );
   await ctx.reply("Set unsaturated fat goal");
@@ -95,7 +91,7 @@ export async function setUnsatFat(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as FoodElement).unsaturatedFat = replaceCommaToDot(
+  (ctx.wizard.state as IProduct).unsaturatedFat = replaceCommaToDot(
     ctx.message.text
   );
   await ctx.reply("Set carbs goal");
@@ -112,7 +108,7 @@ export async function setCarbs(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as FoodElement).carbs = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IProduct).carbs = replaceCommaToDot(ctx.message.text);
   await ctx.reply("Set fiber goal");
   return ctx.wizard.selectStep(steps.setFiber);
 }
@@ -127,11 +123,11 @@ export async function setFiber(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as FoodElement).fiber = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IProduct).fiber = replaceCommaToDot(ctx.message.text);
 
-  const actualState = ctx.wizard.state as FoodElement;
+  const actualState = ctx.wizard.state as IProduct;
 
-  const nutritionGoal: Omit<FoodElement, "mass"> = {
+  const nutritionGoal: Omit<IProduct, "mass"> = {
     kcal: actualState.kcal,
     protein: actualState.protein,
     totalFat: actualState.totalFat,
@@ -142,7 +138,7 @@ export async function setFiber(ctx: Scenes.WizardContext) {
     tgId: actualState.tgId,
   };
 
-  const newGoal = new goalBase(nutritionGoal);
+  const newGoal = new Goal(nutritionGoal);
 
   await newGoal.save();
 

@@ -1,5 +1,5 @@
 import { Scenes } from "telegraf";
-import { CombinedProduct, DialogueState } from "../utils/models";
+import { IMeal, IDialogueState, InitialState } from "../utils/models";
 import {
   isValidNumberString,
   replaceCommaToDot,
@@ -14,7 +14,7 @@ import {
   addProductMassInState,
   updateProductMassAndName,
   IsInputStringAndNumber,
-  findProductInProductBase,
+  findProductInBases,
 } from "../utils/utils";
 import {
   getYesOrNoButton,
@@ -37,12 +37,11 @@ export const createCombinedProduct =
   );
 
 export async function startingDialogue(ctx: Scenes.WizardContext) {
-  (ctx.wizard.state as CombinedProduct).tgId = ctx.from!.id;
-  const fromStartingScene = await handleFromStartingScene(ctx);
-
-  if (fromStartingScene) {
-    return;
+  if (!(ctx.scene.state as InitialState).fromStartingScene) {
+    return await handleFromStartingScene(ctx);
   }
+
+  (ctx.wizard.state as IMeal).tgId = ctx.from!.id;
 
   await ctx.reply("Name of product that you want to create");
   return ctx.wizard.selectStep(steps.waitingForCombinedProductName);
@@ -52,19 +51,12 @@ export async function waitingForCombinedProductName(ctx: Scenes.WizardContext) {
   if (!ctx.message || !("text" in ctx.message)) {
     return;
   }
-
-  const actualState = ctx.wizard.state as CombinedProduct;
-  const tgId = actualState.tgId;
-  const combinedProductName = ctx.message.text.trim();
-
-  if (ctx.message.text === undefined) {
-    await ctx.reply("Wrong, write a product name");
-    return;
-  }
+  const actualState = ctx.wizard.state as IMeal;
+  const combinedProductName = ctx.message.text.trim().toLowerCase();
 
   const existance = await doesExistTheSameProductWithTgId(
-    combinedProductName
-    // tgId
+    combinedProductName,
+    actualState.tgId
   );
 
   if (existance) {
@@ -92,7 +84,7 @@ export async function isReplaceTheProduct(ctx: Scenes.WizardContext) {
   await ctx.answerCbQuery(undefined);
 
   if (succesButton) {
-    (ctx.wizard.state as CombinedProduct).updateProduct = true;
+    (ctx.wizard.state as IMeal).updateProduct = true;
     await ctx.reply("Updating existing combined product");
     await ctx.reply(
       "Name and mass (in gram) of product that you want to combine product in this format: NAME MASS"
@@ -109,7 +101,7 @@ export async function isReplaceTheProduct(ctx: Scenes.WizardContext) {
 export async function waitingForNameAndMassOfProduct(
   ctx: Scenes.WizardContext
 ) {
-  const actualState = ctx.wizard.state as CombinedProduct;
+  const actualState = ctx.wizard.state as IMeal;
 
   if (ctx.callbackQuery && "data" in ctx.callbackQuery) {
     await ctx.answerCbQuery();
@@ -124,7 +116,7 @@ export async function waitingForNameAndMassOfProduct(
     }
 
     if (ctx.callbackQuery.data === "create") {
-      let initalState = {} as DialogueState;
+      let initalState = {} as IDialogueState;
       initalState.name = actualState.actualProductName;
       return ctx.scene.enter("CREATE_PRODUCT", initalState);
     }
@@ -132,7 +124,7 @@ export async function waitingForNameAndMassOfProduct(
 
   if (!ctx.message || !("text" in ctx.message)) {
     await ctx.reply(
-      "Wrong, write a product name and mass (in gram) in this format: NAME MASS (example: apple 100, red apple 100, sweet red apple 100 etc.)"
+      "Wrong, write a product name and mass (in gram) in this format: NAME MASS (example: apple 100)"
     );
     return;
   }
@@ -141,7 +133,7 @@ export async function waitingForNameAndMassOfProduct(
 
   if (productNameAndMass === null) {
     await ctx.reply(
-      "Wrong, write a product name and mass (in gram) in this format: NAME MASS (example: apple 100, red apple 100, sweet red apple 100 etc.)"
+      "Wrong, write a product name and mass (in gram) in this format: NAME MASS (example: apple 100)"
     );
     return;
   }
@@ -169,9 +161,9 @@ export async function waitingForNameAndMassOfProduct(
     return ctx.wizard.selectStep(steps.replaceAddOrIgnore);
   }
 
-  const searchResults = await findProductInProductBase(
-    actualState.actualProductName
-    // tgId
+  const searchResults = await findProductInBases(
+    actualState.actualProductName,
+    tgId
   );
 
   if (searchResults === null) {
@@ -213,7 +205,7 @@ export async function productOptions(ctx: Scenes.WizardContext) {
     return;
   }
 
-  const actualState = ctx.wizard.state as CombinedProduct;
+  const actualState = ctx.wizard.state as IMeal;
 
   const callBackData = ctx.callbackQuery.data;
   await ctx.answerCbQuery();
@@ -240,7 +232,7 @@ export async function replaceAddOrIgnore(ctx: Scenes.WizardContext) {
     return;
   }
 
-  const actualState = ctx.wizard.state as CombinedProduct;
+  const actualState = ctx.wizard.state as IMeal;
   const productName = actualState.actualProductName;
   const productMass = actualState.actualProductMass;
   const callBackData = ctx.callbackQuery.data;
@@ -289,14 +281,19 @@ export async function fixingAndFinal(ctx: Scenes.WizardContext) {
 
   await ctx.answerCbQuery();
 
-  const actualState = ctx.wizard.state as CombinedProduct;
+  const actualState = ctx.wizard.state as IMeal;
 
   if (ctx.callbackQuery.data === "done_action") {
     const finalNutrition = combineAllNutrition(actualState);
 
-    const updateCheck = (ctx.scene.state as DialogueState).updateProduct;
+    const updateCheck = (ctx.scene.state as IDialogueState).updateProduct;
 
-    await createOrUpdateProductInProductBase(finalNutrition, updateCheck, ctx);
+    await createOrUpdateProductInProductBase(
+      finalNutrition,
+      updateCheck,
+      ctx,
+      true
+    );
     return;
   }
 
@@ -313,7 +310,7 @@ export async function fixingMassOfProduct(ctx: Scenes.WizardContext) {
     return;
   }
 
-  const actualState = ctx.wizard.state as CombinedProduct;
+  const actualState = ctx.wizard.state as IMeal;
   const productName = actualState.actualProductName;
 
   if (!isValidNumberString(ctx.message.text)) {

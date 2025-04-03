@@ -1,9 +1,9 @@
-export type Users = {
+export type IUser = {
   tgId: number;
   tgUserName?: string;
 };
 
-export type FoodElement = Users & {
+export type IProduct = IUser & {
   _id?: string;
   name?: string;
   mass: number;
@@ -18,11 +18,11 @@ export type FoodElement = Users & {
   typeOfFood?: "product" | "meal";
 };
 
-export type ProductRaiting = FoodElement & {
+export type IProductRaiting = IProduct & {
   kcalPerProtein: number;
   kcalPerFiber: number;
 };
-export type DialogueState = Pick<FoodElement, "name" | "tgId"> & {
+export type IDialogueState = Pick<IProduct, "name" | "tgId"> & {
   updateProduct: boolean;
   fromDailyProduct: boolean;
   fromCombinedProduct: boolean;
@@ -35,11 +35,13 @@ export type DialogueState = Pick<FoodElement, "name" | "tgId"> & {
   customMass: number;
   botMessageId: number;
   fromValidation: boolean;
-  arrayOfProducts: FoodElement[];
+  arrayOfProducts: IProduct[];
   arrayForDelete: string[];
+  arrToDel: number[];
+  mainMessageId: number;
 };
 
-export type CostOfProtein = {
+export type ICostOfProtein = {
   nameOfProduct: string;
   nameOfCurrency: string;
   cost: number;
@@ -48,19 +50,24 @@ export type CostOfProtein = {
   totalMass: number;
 };
 
-export type DailyFood = FoodElement & {
+export type IConsumedProduct = IProduct & {
   dateOfConsumption: string;
 };
 
-export type CombinedProduct = DialogueState & {
+export type IMeal = IDialogueState & {
   CombinedName: string;
   CombinedMass: number;
-  products: Record<string, FoodElement>;
+  products: Record<string, IProduct>;
   actualProductName: string;
   actualProductMass: number;
-  arrayOfProducts: FoodElement[];
+  arrayOfProducts: IProduct[];
 };
 
-export type PrimalFoodElement = FoodElement & {
+export type IPrimalProduct = IProduct & {
   allowedUsersTgId: number[];
+};
+
+export type InitialState = {
+  mainMessageId: number;
+  fromStartingScene: true;
 };

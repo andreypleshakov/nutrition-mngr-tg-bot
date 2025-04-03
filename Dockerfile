@@ -1,19 +1,25 @@
-FROM node:20.11.1-alpine
+# Stage 1: Build
+FROM node:18-alpine AS build
 
-# Set the working directory inside your Docker image
 WORKDIR /usr/src/app
 
-# Install pnpm
-RUN npm install -g pnpm
-
-# Copy the package.json and pnpm-lock.yaml (or package-lock.json if you're using npm) file into the working directory
 COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install
 
-# Install your application's dependencies
-RUN pnpm install
+COPY tsconfig.json ./
+COPY src ./src
 
-# Copy the rest of your application's source code into the working directory
-COPY . .
+RUN pnpm run build
 
-# Command to run your app (adjust the file name as necessary)
-CMD [ "pnpm", "run", "start" ]
+# Stage 2: Run
+FROM node:18-alpine
+
+WORKDIR /usr/src/app
+
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --prod
+
+COPY --from=build /usr/src/app/dist ./dist
+COPY .env.prod .env
+
+CMD ["node", "dist/app.js"]

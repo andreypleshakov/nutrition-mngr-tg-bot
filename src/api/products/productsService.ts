@@ -1,7 +1,7 @@
-import { FoodElement } from "../../utils/models";
-import { productBase } from "../../utils/schemas";
+import { IProduct } from "../../utils/models";
+import { UsersProduct } from "../../utils/schemas";
 
 export async function getAllProducts(tgId: number) {
-  const foods: FoodElement[] = await productBase.find({tgId: tgId});
+  const foods: IProduct[] = await UsersProduct.find({ tgId: tgId });
   return foods;
 }

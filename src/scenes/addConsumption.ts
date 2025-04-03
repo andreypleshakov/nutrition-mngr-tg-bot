@@ -1,13 +1,17 @@
 import { Scenes, Markup } from "telegraf";
-import { DailyFood, DialogueState } from "../utils/models";
+import {
+  IConsumedProduct,
+  IDialogueState,
+  InitialState,
+} from "../utils/models";
 import {
   handleFromStartingScene,
-  calculateDailyConsumption,
   isValidDateFormat,
-  findProductInProductBase,
   IsInputStringAndNumber,
   deleteAndUpdateBotMessage,
   deleteAndUpdateBotMessageCreate,
+  findProductInBases,
+  calculateConsumption,
 } from "../utils/utils";
 import {
   createButton,
@@ -25,13 +29,11 @@ export const addConsumption = new Scenes.WizardScene<Scenes.WizardContext>(
 );
 
 export async function startingDialogue(ctx: Scenes.WizardContext) {
-  (ctx.wizard.state as DailyFood).tgId = ctx.from!.id;
-
-  const fromStartingScene = await handleFromStartingScene(ctx);
-
-  if (fromStartingScene) {
-    return;
+  if (!(ctx.scene.state as InitialState).fromStartingScene) {
+    return await handleFromStartingScene(ctx);
   }
+
+  (ctx.wizard.state as IConsumedProduct).tgId = ctx.from!.id;
 
   const firstMessage = await ctx.reply(
     "TODAY - add today's consumption statistic\n" +
@@ -39,7 +41,7 @@ export async function startingDialogue(ctx: Scenes.WizardContext) {
     Markup.inlineKeyboard(todayOrCustomDateButton)
   );
 
-  (ctx.wizard.state as DialogueState).botMessageId = firstMessage.message_id;
+  (ctx.wizard.state as IDialogueState).botMessageId = firstMessage.message_id;
 
   return ctx.wizard.selectStep(steps.todayOrCustomDate);
 }
@@ -53,7 +55,7 @@ export async function todayOrCustomDate(ctx: Scenes.WizardContext) {
   const callBackData = ctx.callbackQuery.data;
 
   if (callBackData === "today") {
-    (ctx.wizard.state as DailyFood).dateOfConsumption =
+    (ctx.wizard.state as IConsumedProduct).dateOfConsumption =
       new Date().toISOString();
     await ctx.editMessageText(
       "Enter product's name and mass (in gram) in this format: NAME MASS (example: apple 100/red apple 0.9/sweet red apple 100/etc.)"
@@ -81,7 +83,7 @@ export async function customDate(ctx: Scenes.WizardContext) {
     const secondMessage = "NO";
 
     // Check if 'fromValidation' flag exists
-    const state = ctx.wizard.state as DialogueState;
+    const state = ctx.wizard.state as IDialogueState;
 
     if (!state.fromValidation) {
       state.fromValidation = true; // Set the flag
@@ -94,7 +96,7 @@ export async function customDate(ctx: Scenes.WizardContext) {
     return;
   }
 
-  (ctx.wizard.state as DailyFood).dateOfConsumption = new Date(
+  (ctx.wizard.state as IConsumedProduct).dateOfConsumption = new Date(
     ctx.message.text
   ).toISOString();
 
@@ -107,8 +109,8 @@ export async function customDate(ctx: Scenes.WizardContext) {
 export async function waitingForNameAndMassOfProduct(
   ctx: Scenes.WizardContext
 ) {
-  const actualState = ctx.wizard.state as DailyFood;
-  const dialogueState = ctx.wizard.state as DialogueState;
+  const actualState = ctx.wizard.state as IConsumedProduct;
+  const dialogueState = ctx.wizard.state as IDialogueState;
 
   if (
     ctx.callbackQuery &&
@@ -116,7 +118,7 @@ export async function waitingForNameAndMassOfProduct(
     ctx.callbackQuery.data === "create"
   ) {
     await ctx.answerCbQuery();
-    let initalState = {} as DialogueState;
+    let initalState = {} as IDialogueState;
     initalState.name = actualState.name;
     return ctx.scene.enter("CREATE_PRODUCT", initalState);
   }
@@ -130,19 +132,15 @@ export async function waitingForNameAndMassOfProduct(
   if (productNameAndMass === null) {
     await deleteAndUpdateBotMessage(
       ctx,
-      "Wrong, write a product name and mass (in gram) in this format: NAME MASS (example: apple 100, red apple 100, sweet red apple 100 etc.)"
+      "Wrong, write a product name and mass (in gram) in this format: NAME MASS (example: apple 100)"
     );
-
     return;
   }
 
   actualState.name = productNameAndMass[0];
   actualState.mass = productNameAndMass[1];
   const tgId = actualState.tgId;
-  const searchResults = await findProductInProductBase(
-    actualState.name
-    // tgId
-  );
+  const searchResults = await findProductInBases(actualState.name, tgId);
 
   if (searchResults === null) {
     await deleteAndUpdateBotMessageCreate(ctx, createButton);
@@ -152,7 +150,7 @@ export async function waitingForNameAndMassOfProduct(
   if (searchResults.length === 1) {
     const foodElement = searchResults[0];
     foodElement.mass = actualState.mass;
-    await calculateDailyConsumption(foodElement, actualState, ctx, tgId);
+    await calculateConsumption(foodElement, actualState, ctx, tgId);
     return;
   }
 
@@ -174,8 +172,8 @@ export async function productOptions(ctx: Scenes.WizardContext) {
 
   await ctx.answerCbQuery();
 
-  const actualState = ctx.wizard.state as DailyFood;
-  const dialogueState = ctx.wizard.state as DialogueState;
+  const actualState = ctx.wizard.state as IConsumedProduct;
+  const dialogueState = ctx.wizard.state as IDialogueState;
   const tgId = actualState.tgId;
   const callBackData = ctx.callbackQuery.data;
 
@@ -183,5 +181,5 @@ export async function productOptions(ctx: Scenes.WizardContext) {
     (product) => product._id!.toString() === callBackData
   );
 
-  await calculateDailyConsumption(foodElement!, actualState, ctx, tgId);
+  await calculateConsumption(foodElement!, actualState, ctx, tgId);
 }

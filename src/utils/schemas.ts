@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { Users, DailyFood, FoodElement, PrimalFoodElement } from "./models";
+import { IUser, IConsumedProduct, IProduct, IPrimalProduct } from "./models";
 
 const defaultSchemaParameters = {
   name: { type: String, required: true },
@@ -28,43 +28,52 @@ const defaultSchemaParameters = {
 const { name, status, typeOfFood, ...nutritionGoalFields } =
   defaultSchemaParameters;
 
-const { tgId, ...primalProductBaseFields } = defaultSchemaParameters;
+const { tgId, ...primalProductFields } = defaultSchemaParameters;
 
-const userSchema = new Schema<Users>({
+const userSchema = new Schema<IUser>({
   tgId: { type: Number, required: true, unique: true },
   tgUserName: { type: String, required: true },
 });
 
-export const userBase = model<Users>("userBase", userSchema);
+export const User = model<IUser>("User", userSchema, "users");
 
-const dailyFoodSchema = new Schema<DailyFood>({
+const consumedProductSchema = new Schema<IConsumedProduct>({
   dateOfConsumption: { type: String, required: true },
   mass: { type: Number, required: true },
   ...defaultSchemaParameters,
 });
 
-export const dailyFoodBase = model<DailyFood>("dailyFoodBase", dailyFoodSchema);
+export const ConsumedProduct = model<IConsumedProduct>(
+  "ConsumedProduct",
+  consumedProductSchema,
+  "consumed_products"
+);
 
-const productBaseSchema = new Schema<FoodElement>({
+const productSchema = new Schema<IProduct>({
   ...defaultSchemaParameters,
 });
 
-productBaseSchema.index({ name: 1, telegramId: 1 }, { unique: true });
+productSchema.index({ name: 1, telegramId: 1 }, { unique: true });
 
-export const productBase = model<FoodElement>("productBase", productBaseSchema);
+export const UsersProduct = model<IProduct>(
+  "UsersProduct",
+  productSchema,
+  "users_products"
+);
 
-const nutritionGoalSchema = new Schema<FoodElement>({
+const nutritionGoalSchema = new Schema<IProduct>({
   ...nutritionGoalFields,
 });
 
-export const goalBase = model<FoodElement>("goalBase", nutritionGoalSchema);
+export const Goal = model<IProduct>("Goal", nutritionGoalSchema, "goals");
 
-const primalProductBaseSchema = new Schema<PrimalFoodElement>({
-  ...primalProductBaseFields,
+const primalProductSchema = new Schema<IPrimalProduct>({
+  ...primalProductFields,
   allowedUsersTgId: [{ type: Number, required: true }],
 });
 
-export const primalProductBase = model<PrimalFoodElement>(
-  "primalProductBase",
-  primalProductBaseSchema
+export const PrimalProduct = model<IPrimalProduct>(
+  "PrimalProduct",
+  primalProductSchema,
+  "primal_products"
 );

@@ -1,16 +1,19 @@
 import {
-  FoodElement,
-  CombinedProduct,
-  DailyFood,
-  DialogueState,
-  CostOfProtein,
+  IProduct,
+  IMeal,
+  IConsumedProduct,
+  IDialogueState,
+  ICostOfProtein,
+  InitialState,
+  IPrimalProduct,
 } from "./models";
-import { userBase, dailyFoodBase, productBase } from "./schemas";
+import { ConsumedProduct, UsersProduct, PrimalProduct, User } from "./schemas";
 import { Scenes } from "telegraf";
 import { ButtonType, createButton, getfixButtonProductBase } from "./buttons";
+import { Model } from "mongoose";
 
 /*
-export function calculationOfCostProtein(actualState: CostOfProtein): number {
+export function calculationOfCostProtein(actualState: ICostOfProtein): number {
   const amountOfProtein = actualState.protein / actualState.massScope;
   const costOfGram = actualState.cost / actualState.totalMass;
   const costForOneGramOfProtein = costOfGram / amountOfProtein;
@@ -27,7 +30,7 @@ export function calculateAndRoundNutrient(
 }
 
 export function replaceProductMassInState(
-  combinedProduct: CombinedProduct,
+  combinedProduct: IMeal,
   productName: string,
   mass: number
 ) {
@@ -40,7 +43,7 @@ export function replaceProductMassInState(
 }
 
 export function addProductMassInState(
-  combinedProduct: CombinedProduct,
+  combinedProduct: IMeal,
   productName: string,
   mass: number
 ) {
@@ -53,7 +56,7 @@ export function addProductMassInState(
 }
 
 export function updateProductMassAndName(
-  combinedProduct: CombinedProduct,
+  combinedProduct: IMeal,
   productName: string,
   mass: number
 ) {
@@ -66,7 +69,7 @@ export function updateProductMassAndName(
   });
 }
 
-export function recalculateCombinedMass(combinedProduct: CombinedProduct) {
+export function recalculateCombinedMass(combinedProduct: IMeal) {
   const newMass = Object.values(combinedProduct.products).reduce(
     (accumulator, product) => accumulator + product.mass,
     0
@@ -98,7 +101,7 @@ export function IsInputStringAndNumber(
 
 export function doesProductExistInState(
   productName: string,
-  combinedProduct: CombinedProduct
+  combinedProduct: IMeal
 ): boolean {
   const existingProductName = Object.values(combinedProduct.products).find(
     (product) => product.name === productName
@@ -110,9 +113,7 @@ export function doesProductExistInState(
   return false;
 }
 
-export function getProductNameAndMass(
-  combinedProduct: CombinedProduct
-): string[] {
+export function getProductNameAndMass(combinedProduct: IMeal): string[] {
   let productInfoArray: string[] = [];
 
   Object.keys(combinedProduct.products).forEach((documentId) => {
@@ -129,7 +130,7 @@ export function roundToThree(num: number): number {
 
 export function calculatePercentageOfNutrient(
   nutrientMass: number,
-  foodElement: FoodElement
+  foodElement: IProduct
 ): number {
   const sumNutrition = roundToThree(
     foodElement.protein + foodElement.totalFat + foodElement.carbs
@@ -199,10 +200,8 @@ export function isValidNumberString(text: string): boolean {
   return true;
 }
 
-export function combineAllNutrition(
-  combinedProduct: CombinedProduct
-): FoodElement {
-  let resultProduct: FoodElement = {
+export function combineAllNutrition(combinedProduct: IMeal): IProduct {
+  let resultProduct: IProduct = {
     name: combinedProduct.CombinedName,
     mass: combinedProduct.CombinedMass,
 
@@ -275,7 +274,7 @@ export function replaceCommaToDot(input: string): number {
 }
 
 export function getProductNameById(
-  combinedProduct: CombinedProduct,
+  combinedProduct: IMeal,
   callBackData: string
 ): string {
   const product = Object.values(combinedProduct.products).find(
@@ -297,15 +296,24 @@ export function formatDate(date: Date): string | null {
 }
 
 export async function doesExistTheSameProductWithTgId(
-  productName: string
-  // tgId: number
+  productName: string,
+  tgId: number
 ): Promise<boolean> {
-  const existance = await productBase.findOne({
+  const existancePrimal = await PrimalProduct.findOne({
     name: productName,
-    // tgId: tgId,
+    tgId: tgId,
   });
 
-  if (existance) {
+  if (existancePrimal) {
+    return true;
+  }
+
+  const existanceProductBase = await UsersProduct.findOne({
+    name: productName,
+    tgId: tgId,
+  });
+
+  if (existanceProductBase) {
     return true;
   }
   return false;
@@ -314,8 +322,8 @@ export async function doesExistTheSameProductWithTgId(
 export async function getProductNutritionFromBaseIfExists(
   productName: string,
   tgId: number
-): Promise<FoodElement | null> {
-  const product = await productBase.findOne({
+): Promise<IProduct | null> {
+  const product = await UsersProduct.findOne({
     name: productName,
     tgId: tgId,
   });
@@ -325,7 +333,7 @@ export async function getProductNutritionFromBaseIfExists(
   }
   const newStringProductId = product!._id.toString();
 
-  const nutrition = {} as FoodElement;
+  const nutrition = {} as IProduct;
   (nutrition._id = newStringProductId),
     (nutrition.name = productName),
     (nutrition.kcal = product!.kcal),
@@ -343,8 +351,8 @@ export async function getProductNutritionFromBaseIfExists(
 export async function handleFromFixingStep(
   ctx: Scenes.WizardContext
 ): Promise<boolean> {
-  const dialogueState = ctx.wizard.state as DialogueState;
-  const actualState = ctx.wizard.state as FoodElement;
+  const dialogueState = ctx.wizard.state as IDialogueState;
+  const actualState = ctx.wizard.state as IProduct;
   const fixButtonProductBase = getfixButtonProductBase(actualState);
 
   if (dialogueState.fromFixingStep) {
@@ -359,20 +367,23 @@ export async function handleFromFixingStep(
 
 export async function handleFromStartingScene(
   ctx: Scenes.WizardContext
-): Promise<boolean> {
-  const dialogueState = ctx.wizard.state as DialogueState;
+): Promise<void> {
+  const delay = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
 
-  if (dialogueState.fromStartingScene !== true) {
-    await ctx.reply("You can't calculate anything because you are not logged");
-    await ctx.reply("Start using this bot by this command /start_calculation");
-    ctx.scene.leave();
-    return true;
-  }
-  return false;
+  const errorMessage = await ctx.reply(
+    "You can't calculate anything because you are not logged, you will be redirected to start"
+  );
+  await delay(3000);
+  await ctx.deleteMessages([
+    errorMessage.message_id,
+    (ctx.scene.state as InitialState).mainMessageId,
+  ]);
+  await ctx.scene.enter("START_CALCULATION");
 }
 
 export async function createProductInBase(
-  foodElement: FoodElement
+  foodElement: IProduct
 ): Promise<void> {
   const { name, tgId } = foodElement;
 
@@ -402,7 +413,7 @@ export async function createProductInBase(
     unsatFatPercent = Math.round((unsaturatedFat / totalFat) * 100);
   }
 
-  const newProduct = new productBase({
+  const newProduct = new UsersProduct({
     name,
     kcal,
     protein,
@@ -420,51 +431,115 @@ export async function createProductInBase(
 
   await newProduct.save();
 }
-export async function findProductInProductBase(
+
+function productHelper(
+  result: IProduct[] | IPrimalProduct[],
   productName: string
-  // tgId: number
-): Promise<FoodElement[] | null> {
-  const searchResults = await productBase.aggregate<FoodElement>([
+): IProduct | undefined {
+  return Object.values(result).find((product) => product.name === productName);
+}
+
+export async function findProductInBases(
+  productName: string,
+  tgId: number
+): Promise<IProduct[] | null> {
+  const searchPrimalResult = await findProductInDB(
+    PrimalProduct,
+    productName,
+    tgId,
+    "searchPrimal"
+  );
+
+  if (searchPrimalResult === null) {
+    const searchProductsResults = await findProductInDB(
+      UsersProduct,
+      productName,
+      tgId,
+      "searchProducts"
+    );
+    if (searchProductsResults === null) {
+      return null;
+    }
+
+    const product = productHelper(searchProductsResults, productName);
+
+    if (
+      product &&
+      (searchProductsResults.length === 1 ||
+        product.name!.split(" ").length >= 3)
+    ) {
+      return [product];
+    }
+
+    return searchProductsResults;
+  }
+
+  const product = productHelper(searchPrimalResult, productName);
+
+  if (
+    product &&
+    (searchPrimalResult.length === 1 || product.name!.split(" ").length >= 3)
+  ) {
+    return [product];
+  }
+
+  const result: IProduct[] = searchPrimalResult.map(
+    ({ allowedUsersTgId, ...rest }) => rest
+  );
+
+  return result;
+}
+
+async function findProductInDB<T>(
+  DB: Model<T>,
+  productName: string,
+  tgId: number,
+  indexName: "searchPrimal" | "searchProducts"
+): Promise<T[] | null> {
+  if (indexName === "searchPrimal") {
+    const result = await DB.aggregate([
+      {
+        $search: {
+          index: indexName,
+          text: {
+            query: productName,
+            path: "name",
+          },
+        },
+      },
+      {
+        $match: {
+          allowedUsersTgId: { $in: [tgId] },
+        },
+      },
+    ]);
+
+    return result.length ? result : null;
+  }
+
+  const result = await DB.aggregate([
     {
       $search: {
-        index: "searchProducts",
+        index: indexName,
         text: {
           query: productName,
           path: "name",
         },
       },
     },
-    // {
-    //   $match: {
-    //     tgId: tgId,
-    //   },
-    // },
+    {
+      $match: {
+        tgId: tgId,
+      },
+    },
   ]);
 
-  if (searchResults.length === 0) {
-    return null;
-  }
-
-  const product = Object.values(searchResults).find(
-    (product) => product.name === productName
-  );
-
-  if (
-    product &&
-    (searchResults.length === 1 || product.name!.split(" ").length >= 3)
-  ) {
-    const foodElement = {
-      ...product,
-    };
-    return [foodElement];
-  }
-
-  return searchResults;
+  return result.length ? result : null;
 }
 
-export async function calculateDailyConsumption(
-  product: FoodElement,
-  dailyState: DailyFood,
+export async function calculateConsumption(
+  product: IProduct,
+  dailyState: IConsumedProduct,
   ctx: Scenes.WizardContext,
   tgId: number
 ): Promise<void> {
@@ -472,11 +547,13 @@ export async function calculateDailyConsumption(
   const productName = product.name;
   const date = dailyState.dateOfConsumption;
 
+  console.log(product.status);
+
   const sumNutrition =
     product.protein * mass + product.totalFat * mass + product.carbs * mass;
 
   if (sumNutrition === 0) {
-    const nutritionDetails = {
+    const nutritionDetails: IConsumedProduct = {
       dateOfConsumption: date,
       name: productName,
       mass: mass,
@@ -488,9 +565,11 @@ export async function calculateDailyConsumption(
       carbs: 0,
       fiber: 0,
       tgId: tgId,
+      status: product.status,
+      typeOfFood: product.typeOfFood,
     };
 
-    const newDate = new dailyFoodBase(nutritionDetails);
+    const newDate = new ConsumedProduct(nutritionDetails);
     await newDate.save();
 
     await deleteAndUpdateBotMessage(
@@ -498,7 +577,7 @@ export async function calculateDailyConsumption(
       `Product ${productName} added to daily consumption statistics`
     );
 
-    await ctx.deleteMessage((ctx.wizard.state as DialogueState).botMessageId);
+    await ctx.deleteMessage((ctx.wizard.state as IDialogueState).botMessageId);
     await ctx.scene.enter("START_CALCULATION");
     return;
   }
@@ -517,22 +596,25 @@ export async function calculateDailyConsumption(
     fiber: roundToThree(product.fiber * mass),
 
     tgId: tgId,
+    status: product.status,
+    typeOfFood: product.typeOfFood,
   };
 
-  const newDate = new dailyFoodBase(nutritionDetails);
+  const newDate = new ConsumedProduct(nutritionDetails);
   await newDate.save();
   await deleteAndUpdateBotMessage(
     ctx,
     `Product ${productName} added to daily consumption statistics`
   );
-  await ctx.deleteMessage((ctx.wizard.state as DialogueState).botMessageId);
+  await ctx.deleteMessage((ctx.wizard.state as IDialogueState).botMessageId);
   await ctx.scene.enter("START_CALCULATION");
 }
 
 export async function createOrUpdateProductInProductBase(
-  foodElement: FoodElement,
+  foodElement: IProduct,
   updateCheck: boolean,
-  ctx: Scenes.WizardContext
+  ctx: Scenes.WizardContext,
+  isCombined: boolean
 ): Promise<void> {
   const filter = { name: foodElement.name, tgId: foodElement.tgId };
 
@@ -567,10 +649,11 @@ export async function createOrUpdateProductInProductBase(
     ),
 
     tgId: foodElement.tgId,
+    typeOfFood: isCombined ? "meal" : "product",
   };
 
   if (updateCheck === true) {
-    await productBase.findOneAndUpdate(
+    await UsersProduct.findOneAndUpdate(
       filter,
       { $set: nutrition },
       {
@@ -580,7 +663,7 @@ export async function createOrUpdateProductInProductBase(
     );
     await ctx.reply(`Product ${foodElement.name} was updated in the database.`);
   } else {
-    const newProduct = new productBase(nutrition);
+    const newProduct = new UsersProduct(nutrition);
 
     await newProduct.save();
     await ctx.reply(`Product ${nutrition.name} was created in the database.`);
@@ -590,7 +673,7 @@ export async function createOrUpdateProductInProductBase(
 }
 
 export async function existanceOfUser(userId: number): Promise<boolean> {
-  const existance = await userBase.findOne({
+  const existance = await User.findOne({
     tgId: userId,
   });
 
@@ -614,7 +697,7 @@ export async function getConsumptionStatisticByDateAnTgId(
     tgId: tgId,
   };
 
-  const foods = await dailyFoodBase.find(filter);
+  const foods = await ConsumedProduct.find(filter);
 
   if (foods.length === 0) {
     await ctx.reply("You don't have any consumption records in this day");
@@ -720,12 +803,12 @@ export async function deleteConsumptionStatisticByDateAnTgId(
     tgId: tgId,
   };
 
-  const foods: FoodElement[] = await dailyFoodBase.find(filter).lean();
+  const foods: IProduct[] = await ConsumedProduct.find(filter).lean();
   return foods;
 }
 
 export async function findTopTenProducts(typeOfCheck: string) {
-  const foods = await productBase.find({});
+  const foods = await UsersProduct.find({});
 
   const calculated = foods
     .filter((food) => {
@@ -757,16 +840,16 @@ export async function deleteAndUpdateBotMessageCreate(
 
   const message =
     `**${
-      (ctx.wizard.state as DailyFood).name
+      (ctx.wizard.state as IConsumedProduct).name
     }** doesn't exist in product database\n\n` +
     `**Create** - to create **${
-      (ctx.wizard.state as DailyFood).name
+      (ctx.wizard.state as IConsumedProduct).name
     }** in product database\n` +
     "Or just enter name of another product to try again";
 
   await ctx.telegram.editMessageText(
     ctx.chat!.id,
-    (ctx.wizard.state as DialogueState).botMessageId,
+    (ctx.wizard.state as IDialogueState).botMessageId,
     undefined,
     message,
     button
@@ -781,10 +864,9 @@ export async function deleteAndUpdateBotMessage(
   if (ctx.message) {
     await ctx.deleteMessage(ctx.message.message_id);
   }
-
   await ctx.telegram.editMessageText(
     ctx.chat!.id,
-    (ctx.wizard.state as DialogueState).botMessageId,
+    (ctx.wizard.state as IDialogueState).botMessageId,
     undefined,
     message,
     button
