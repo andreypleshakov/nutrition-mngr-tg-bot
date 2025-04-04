@@ -23,4 +23,3 @@ export const steps = manipulateConsumptionStatisticStepsList.reduce(
   },
   {} as Record<string, number>
 );
-

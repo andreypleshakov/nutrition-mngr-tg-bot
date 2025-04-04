@@ -1,11 +1,6 @@
 import { Scenes } from "telegraf";
 import { IDialogueState, InitialState } from "../utils/models";
-import {
-  ConsumedProduct,
-  PrimalProduct,
-  User,
-  UsersProduct,
-} from "../utils/schemas";
+import { PrimalProduct, User } from "../utils/schemas";
 import { existanceOfUser } from "../utils/utils";
 import { sceneButtons } from "../utils/buttons";
 
@@ -13,7 +8,6 @@ export const startCalculation = new Scenes.WizardScene<Scenes.WizardContext>(
   "START_CALCULATION",
 
   async (ctx) => {
-
     if (ctx.from) {
       const { id: userId, username: userName } = ctx.from;
 

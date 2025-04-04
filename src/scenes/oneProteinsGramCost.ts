@@ -1,7 +1,6 @@
 import { Scenes } from "telegraf";
 import {
-  isValidNumberString,
-  replaceCommaToDot,
+  isValidNumber,
   IsInputStringAndNumber,
   handleFromStartingScene,
 } from "../utils/utils";
@@ -58,16 +57,10 @@ export async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
 }
 
 export async function customMass(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  const customMass = replaceCommaToDot(ctx.message.text);
+  const customMass = validNumber;
 
   if (customMass === 0) {
     await ctx.reply("Enter mass that greater than 0");
@@ -81,35 +74,19 @@ export async function customMass(ctx: Scenes.WizardContext) {
 }
 
 export async function proteinPerSelectedMass(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as ICostOfProtein).protein = replaceCommaToDot(
-    ctx.message.text
-  );
+  (ctx.wizard.state as ICostOfProtein).protein = validNumber;
 
   await ctx.reply("Enter total mass of product");
   return ctx.wizard.selectStep(steps.totalMassOfProduct);
 }
 
 export async function totalMassOfProduct(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
-  (ctx.wizard.state as ICostOfProtein).totalMass = replaceCommaToDot(
-    ctx.message.text
-  );
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
+  (ctx.wizard.state as ICostOfProtein).totalMass = validNumber;
   await ctx.reply(
     "Enter currency with cost of product (ex.: usd 100, usd 10.1, usd 10,1"
   );

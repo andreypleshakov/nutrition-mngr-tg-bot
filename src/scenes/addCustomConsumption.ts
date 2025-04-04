@@ -7,8 +7,8 @@ import { IConsumedProduct, InitialState } from "../utils/models";
 import {
   handleFromStartingScene,
   isValidDateFormat,
-  isValidNumberString,
-  replaceCommaToDot,
+  isValidNumber,
+  isValidText,
 } from "../utils/utils";
 import { todayOrCustomDateButton } from "../utils/buttons";
 import { ConsumedProduct } from "../utils/schemas";
@@ -79,11 +79,10 @@ export async function customDate(ctx: Scenes.WizardContext) {
 export async function waitingForNameAndMassOfProduct(
   ctx: Scenes.WizardContext
 ) {
-  if (!ctx.message || !("text" in ctx.message)) {
-    return;
-  }
+  const validText = isValidText(ctx);
+  if (!validText) return;
 
-  (ctx.wizard.state as IConsumedProduct).name = ctx.message.text.trim();
+  (ctx.wizard.state as IConsumedProduct).name = validText;
 
   await ctx.reply(
     `Enter total mass of ${(ctx.wizard.state as IConsumedProduct).name}`
@@ -92,18 +91,10 @@ export async function waitingForNameAndMassOfProduct(
 }
 
 export async function mass(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as IConsumedProduct).mass = replaceCommaToDot(
-    ctx.message.text
-  );
+  (ctx.wizard.state as IConsumedProduct).mass = validNumber;
 
   await ctx.reply(
     `Enter total kcal of ${(ctx.wizard.state as IConsumedProduct).name}`
@@ -113,18 +104,10 @@ export async function mass(ctx: Scenes.WizardContext) {
 }
 
 export async function kcal(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as IConsumedProduct).kcal = replaceCommaToDot(
-    ctx.message.text
-  );
+  (ctx.wizard.state as IConsumedProduct).kcal = validNumber;
 
   await ctx.reply(
     `Enter total protein of ${(ctx.wizard.state as IConsumedProduct).name}`
@@ -134,18 +117,10 @@ export async function kcal(ctx: Scenes.WizardContext) {
 }
 
 export async function protein(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as IConsumedProduct).protein = replaceCommaToDot(
-    ctx.message.text
-  );
+  (ctx.wizard.state as IConsumedProduct).protein = validNumber;
 
   await ctx.reply(
     `Enter total fat of ${(ctx.wizard.state as IConsumedProduct).name}`
@@ -155,18 +130,10 @@ export async function protein(ctx: Scenes.WizardContext) {
 }
 
 export async function totalFat(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as IConsumedProduct).totalFat = replaceCommaToDot(
-    ctx.message.text
-  );
+  (ctx.wizard.state as IConsumedProduct).totalFat = validNumber;
 
   await ctx.reply(
     `Enter total saturated fat of ${
@@ -178,18 +145,10 @@ export async function totalFat(ctx: Scenes.WizardContext) {
 }
 
 export async function satAndUnsatFat(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as IConsumedProduct).saturatedFat = replaceCommaToDot(
-    ctx.message.text
-  );
+  (ctx.wizard.state as IConsumedProduct).saturatedFat = validNumber;
 
   (ctx.wizard.state as IConsumedProduct).unsaturatedFat =
     (ctx.wizard.state as IConsumedProduct).totalFat -
@@ -203,18 +162,10 @@ export async function satAndUnsatFat(ctx: Scenes.WizardContext) {
 }
 
 export async function carbs(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as IConsumedProduct).carbs = replaceCommaToDot(
-    ctx.message.text
-  );
+  (ctx.wizard.state as IConsumedProduct).carbs = validNumber;
 
   await ctx.reply(
     `Enter total fiber of ${(ctx.wizard.state as IConsumedProduct).name}`
@@ -224,22 +175,14 @@ export async function carbs(ctx: Scenes.WizardContext) {
 }
 
 export async function fiber(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as IConsumedProduct).fiber = replaceCommaToDot(
-    ctx.message.text
-  );
+  (ctx.wizard.state as IConsumedProduct).fiber = validNumber;
 
   const actualState = ctx.wizard.state as IConsumedProduct;
 
-  const nutritionDetails = {
+  const nutritionDetails: IConsumedProduct = {
     dateOfConsumption: actualState.dateOfConsumption,
     name: actualState.name,
     mass: actualState.mass,

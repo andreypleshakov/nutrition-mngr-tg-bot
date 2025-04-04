@@ -1,8 +1,7 @@
 import { Scenes } from "telegraf";
 import { IMeal, IDialogueState, InitialState } from "../utils/models";
 import {
-  isValidNumberString,
-  replaceCommaToDot,
+  isValidNumber,
   getProductNameById,
   replaceProductMassInState,
   recalculateCombinedMass,
@@ -15,9 +14,10 @@ import {
   updateProductMassAndName,
   IsInputStringAndNumber,
   findProductInBases,
+  updateProductMeal,
+  isValidText,
 } from "../utils/utils";
 import {
-  getYesOrNoButton,
   yesOrNoButton,
   doneButton,
   getFixButtonCombinedProduct,
@@ -48,11 +48,11 @@ export async function startingDialogue(ctx: Scenes.WizardContext) {
 }
 
 export async function waitingForCombinedProductName(ctx: Scenes.WizardContext) {
-  if (!ctx.message || !("text" in ctx.message)) {
-    return;
-  }
+  const validText = isValidText(ctx);
+  if (!validText) return;
+
   const actualState = ctx.wizard.state as IMeal;
-  const combinedProductName = ctx.message.text.trim().toLowerCase();
+  const combinedProductName = validText;
 
   const existance = await doesExistTheSameProductWithTgId(
     combinedProductName,
@@ -60,8 +60,8 @@ export async function waitingForCombinedProductName(ctx: Scenes.WizardContext) {
   );
 
   if (existance) {
-    actualState.CombinedName = combinedProductName;
-    actualState.CombinedMass = 0;
+    actualState.MealName = combinedProductName;
+    actualState.MealMass = 0;
     actualState.products = {};
 
     await ctx.reply("Product already exists in database");
@@ -69,33 +69,20 @@ export async function waitingForCombinedProductName(ctx: Scenes.WizardContext) {
     return ctx.wizard.selectStep(steps.isReplaceTheProduct);
   }
 
-  actualState.CombinedName = combinedProductName;
-  actualState.CombinedMass = 0;
+  actualState.MealName = combinedProductName;
+  actualState.MealMass = 0;
   actualState.products = {};
 
   await ctx.reply(
-    "Enter the name and mass (in gram) of the first product to start combining in this format: NAME MASS"
+    `The name and mass of the first product that will be included in the meal ${
+      (ctx.wizard.state as IMeal).MealName
+    }`
   );
   return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
 }
 
 export async function isReplaceTheProduct(ctx: Scenes.WizardContext) {
-  const succesButton = getYesOrNoButton(ctx);
-  await ctx.answerCbQuery(undefined);
-
-  if (succesButton) {
-    (ctx.wizard.state as IMeal).updateProduct = true;
-    await ctx.reply("Updating existing combined product");
-    await ctx.reply(
-      "Name and mass (in gram) of product that you want to combine product in this format: NAME MASS"
-    );
-    return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
-  }
-  await ctx.reply("You can't have two equal products in product base");
-  await ctx.reply(
-    "If you want to enter new product use command /start_calculation"
-  );
-  return ctx.scene.enter("START_CALCULATION");
+  await updateProductMeal(ctx, steps.waitingForNameAndMassOfProduct, "Meal");
 }
 
 export async function waitingForNameAndMassOfProduct(
@@ -166,13 +153,19 @@ export async function waitingForNameAndMassOfProduct(
     tgId
   );
 
+  `The name and mass of the product that will be included in the meal ${
+    (ctx.wizard.state as IMeal).MealName
+  }`;
+
   if (searchResults === null) {
     await ctx.reply("This product does not exist in product database");
     await ctx.reply(
       `
     Create - to create ${actualState.actualProductName} in product database;
-    Done - to calculate nutrition of ${actualState.CombinedName};
-    Or just enter the name and mass (in gram) of the next product to combine in this format: NAME MASS, to ignore ${actualState.actualProductName}`,
+    Done - to calculate nutrition of ${actualState.MealName};
+    Or just enter the name and mass (in gram) of the next product that will be included in the meal ${
+      (ctx.wizard.state as IMeal).MealName
+    }, (ignore ${actualState.actualProductName})`,
       createOrDoneButton
     );
     return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
@@ -184,10 +177,12 @@ export async function waitingForNameAndMassOfProduct(
     actualState.products[documentId] = foodElement;
     actualState.products[documentId].name = actualState.actualProductName;
     actualState.products[documentId].mass = actualState.actualProductMass;
-    actualState.CombinedMass += actualState.actualProductMass;
+    actualState.MealMass += actualState.actualProductMass;
 
     await ctx.reply(
-      `Enter the name and mass (in gram) of the next product to combine in this format: NAME MASS press Done to calculate nutrition`,
+      `The name and mass of the product that will be included in the meal ${
+        (ctx.wizard.state as IMeal).MealName
+      } or press Done to calculate nutrition`,
       doneButton
     );
     return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
@@ -218,10 +213,12 @@ export async function productOptions(ctx: Scenes.WizardContext) {
   actualState.products[documentId] = foodElement!;
   actualState.products[documentId].name = foodElement!.name;
   actualState.products[documentId].mass = actualState.actualProductMass;
-  actualState.CombinedMass += actualState.actualProductMass;
+  actualState.MealMass += actualState.actualProductMass;
 
   await ctx.reply(
-    `Enter the name and mass (in gram) of the next product to combine in this format: NAME MASS press Done to calculate nutrition`,
+    `The name and mass of the product that will be included in the meal ${
+      (ctx.wizard.state as IMeal).MealName
+    } or press Done to calculate nutrition`,
     doneButton
   );
   return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
@@ -245,7 +242,9 @@ export async function replaceAddOrIgnore(ctx: Scenes.WizardContext) {
       recalculateCombinedMass(actualState);
       await ctx.reply("Product succsesfully replaced");
       await ctx.reply(
-        `Enter the name and mass (in gram) of the next product to combine in this format: NAME MASS press Done to calculate nutrition`,
+        `The name and mass of the product that will be included in the meal ${
+          (ctx.wizard.state as IMeal).MealName
+        } or press Done to calculate nutrition`,
         doneButton
       );
       return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
@@ -254,7 +253,9 @@ export async function replaceAddOrIgnore(ctx: Scenes.WizardContext) {
       recalculateCombinedMass(actualState);
       await ctx.reply("Product mass succsesfully added");
       await ctx.reply(
-        `Enter the name and mass (in gram) of the next product to combine in this format: NAME MASS press Done to calculate nutrition`,
+        `The name and mass of the product that will be included in the meal ${
+          (ctx.wizard.state as IMeal).MealName
+        } or press Done to calculate nutrition`,
         doneButton
       );
       return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
@@ -267,7 +268,9 @@ export async function replaceAddOrIgnore(ctx: Scenes.WizardContext) {
       });
       await ctx.reply("New mass of product succsesfully ignored");
       await ctx.reply(
-        `Enter the name and mass (in gram) of the next product to combine in this format: NAME MASS press Done to calculate nutrition`,
+        `The name and mass of the product that will be included in the meal ${
+          (ctx.wizard.state as IMeal).MealName
+        } or press Done to calculate nutrition`,
         doneButton
       );
       return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
@@ -306,19 +309,12 @@ export async function fixingAndFinal(ctx: Scenes.WizardContext) {
 }
 
 export async function fixingMassOfProduct(ctx: Scenes.WizardContext) {
-  if (!ctx.message || !("text" in ctx.message)) {
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
   const actualState = ctx.wizard.state as IMeal;
   const productName = actualState.actualProductName;
-
-  if (!isValidNumberString(ctx.message.text)) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
-
-  const mass = replaceCommaToDot(ctx.message.text);
+  const mass = validNumber;
 
   updateProductMassAndName(actualState, productName, mass);
 

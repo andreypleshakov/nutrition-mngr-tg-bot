@@ -3,13 +3,12 @@ import {
   IMeal,
   IConsumedProduct,
   IDialogueState,
-  ICostOfProtein,
   InitialState,
   IPrimalProduct,
 } from "./models";
 import { ConsumedProduct, UsersProduct, PrimalProduct, User } from "./schemas";
 import { Scenes } from "telegraf";
-import { ButtonType, createButton, getfixButtonProductBase } from "./buttons";
+import { ButtonType, getfixButtonProductBase, perButton } from "./buttons";
 import { Model } from "mongoose";
 
 /*
@@ -74,8 +73,8 @@ export function recalculateCombinedMass(combinedProduct: IMeal) {
     (accumulator, product) => accumulator + product.mass,
     0
   );
-  combinedProduct.CombinedMass = newMass;
-  return combinedProduct.CombinedMass;
+  combinedProduct.MealMass = newMass;
+  return combinedProduct.MealMass;
 }
 
 export function IsInputStringAndNumber(
@@ -181,29 +180,52 @@ export function isValidDateFormat(date: string): boolean {
   return true;
 }
 
-export function isValidNumberString(text: string): boolean {
-  if (!/^[0-9,.]*$/.test(text)) {
-    return false;
+function replaceCommaToDot(input: string): number {
+  const finalInput = input.trim();
+  return parseFloat(finalInput.replace(",", "."));
+}
+
+export function isValidText(ctx: Scenes.WizardContext): string | null {
+  return !ctx.message || !("text" in ctx.message)
+    ? null
+    : ctx.message.text.trim().toLowerCase();
+}
+
+export async function isValidNumber(
+  ctx: Scenes.WizardContext
+): Promise<number | null> {
+  const errorMsg = "Wrong, write a number in this format: 10 / 10.0 / 10,0";
+
+  if (!ctx.message || !("text" in ctx.message)) {
+    await ctx.reply(errorMsg);
+    return null;
+  }
+
+  const text = ctx.message.text;
+
+  if (!/^[\d.,]+$/.test(text)) {
+    await ctx.reply(errorMsg);
+    return null;
   }
 
   const commaCount = (text.match(/,/g) || []).length;
-  const periodCount = (text.match(/\./g) || []).length;
+  const dotCount = (text.match(/\./g) || []).length;
 
-  if (
-    commaCount > 1 ||
-    periodCount > 1 ||
-    (commaCount === 1 && periodCount === 1)
-  ) {
-    return false;
+  const hasTooManySeparators =
+    commaCount > 1 || dotCount > 1 || (commaCount === 1 && dotCount === 1);
+
+  if (hasTooManySeparators) {
+    await ctx.reply(errorMsg);
+    return null;
   }
 
-  return true;
+  return replaceCommaToDot(text);
 }
 
 export function combineAllNutrition(combinedProduct: IMeal): IProduct {
   let resultProduct: IProduct = {
-    name: combinedProduct.CombinedName,
-    mass: combinedProduct.CombinedMass,
+    name: combinedProduct.MealName,
+    mass: combinedProduct.MealMass,
 
     kcal: 0,
     protein: 0,
@@ -266,11 +288,6 @@ export function checkFormatOfProduct(userInput: string): boolean {
   }
 
   return true;
-}
-
-export function replaceCommaToDot(input: string): number {
-  const finalInput = input.trim();
-  return parseFloat(finalInput.replace(",", "."));
 }
 
 export function getProductNameById(
@@ -496,26 +513,13 @@ async function findProductInDB<T>(
   tgId: number,
   indexName: "searchPrimal" | "searchProducts"
 ): Promise<T[] | null> {
-  if (indexName === "searchPrimal") {
-    const result = await DB.aggregate([
-      {
-        $search: {
-          index: indexName,
-          text: {
-            query: productName,
-            path: "name",
-          },
-        },
-      },
-      {
-        $match: {
-          allowedUsersTgId: { $in: [tgId] },
-        },
-      },
-    ]);
+  const queryPrimal = {
+    allowedUsersTgId: { $in: [tgId] },
+  };
 
-    return result.length ? result : null;
-  }
+  const queryPrduct = {
+    tgId: tgId,
+  };
 
   const result = await DB.aggregate([
     {
@@ -528,9 +532,7 @@ async function findProductInDB<T>(
       },
     },
     {
-      $match: {
-        tgId: tgId,
-      },
+      $match: indexName === "searchPrimal" ? queryPrimal : queryPrduct,
     },
   ]);
 
@@ -539,15 +541,13 @@ async function findProductInDB<T>(
 
 export async function calculateConsumption(
   product: IProduct,
-  dailyState: IConsumedProduct,
-  ctx: Scenes.WizardContext,
-  tgId: number
+  ctx: Scenes.WizardContext
 ): Promise<void> {
-  const mass = dailyState.mass;
-  const productName = product.name;
-  const date = dailyState.dateOfConsumption;
+  const consumedState = ctx.wizard.state as IConsumedProduct;
 
-  console.log(product.status);
+  const mass = consumedState.mass;
+  const productName = product.name;
+  const date = consumedState.dateOfConsumption;
 
   const sumNutrition =
     product.protein * mass + product.totalFat * mass + product.carbs * mass;
@@ -564,7 +564,7 @@ export async function calculateConsumption(
       totalFat: 0,
       carbs: 0,
       fiber: 0,
-      tgId: tgId,
+      tgId: consumedState.tgId,
       status: product.status,
       typeOfFood: product.typeOfFood,
     };
@@ -577,7 +577,10 @@ export async function calculateConsumption(
       `Product ${productName} added to daily consumption statistics`
     );
 
-    await ctx.deleteMessage((ctx.wizard.state as IDialogueState).botMessageId);
+    await ctx.deleteMessages([
+      (ctx.wizard.state as IDialogueState).botMessageId,
+      (ctx.wizard.state as IDialogueState).mainMessageId,
+    ]);
     await ctx.scene.enter("START_CALCULATION");
     return;
   }
@@ -586,7 +589,6 @@ export async function calculateConsumption(
     dateOfConsumption: date,
     name: productName,
     mass: mass,
-
     kcal: roundToThree(product.kcal * mass),
     protein: roundToThree(product.protein * mass),
     saturatedFat: roundToThree(product.saturatedFat * mass),
@@ -594,8 +596,7 @@ export async function calculateConsumption(
     totalFat: roundToThree(product.totalFat * mass),
     carbs: roundToThree(product.carbs * mass),
     fiber: roundToThree(product.fiber * mass),
-
-    tgId: tgId,
+    tgId: consumedState.tgId,
     status: product.status,
     typeOfFood: product.typeOfFood,
   };
@@ -606,7 +607,10 @@ export async function calculateConsumption(
     ctx,
     `Product ${productName} added to daily consumption statistics`
   );
-  await ctx.deleteMessage((ctx.wizard.state as IDialogueState).botMessageId);
+  await ctx.deleteMessages([
+    (ctx.wizard.state as IDialogueState).botMessageId,
+    (ctx.wizard.state as IDialogueState).mainMessageId,
+  ]);
   await ctx.scene.enter("START_CALCULATION");
 }
 
@@ -620,7 +624,6 @@ export async function createOrUpdateProductInProductBase(
 
   const nutrition = {
     name: foodElement.name,
-
     kcal: roundToThree(foodElement.kcal),
     protein: roundToThree(foodElement.protein),
     totalFat: roundToThree(foodElement.totalFat),
@@ -828,8 +831,6 @@ export async function findTopTenProducts(typeOfCheck: string) {
   );
 
   const topTen = sorted.slice(0, 20);
-
-  console.log(topTen);
 }
 
 export async function deleteAndUpdateBotMessageCreate(
@@ -871,4 +872,47 @@ export async function deleteAndUpdateBotMessage(
     message,
     button
   );
+}
+
+export const productEditMessage = async (ctx: Scenes.WizardContext) => {
+  await ctx.reply(
+    `Choose per what mass you want to calculate nutrition of ${
+      (ctx.wizard.state as IProduct).name
+    } PER 100 or PER CUSTOM`,
+    perButton
+  );
+};
+
+export const mealEditMessage = async (ctx: Scenes.WizardContext) => {
+  await ctx.reply(
+    `The name and mass of the product that will be included in the meal ${
+      (ctx.wizard.state as IMeal).MealName
+    }`
+  );
+};
+
+export async function updateProductMeal(
+  ctx: Scenes.WizardContext,
+  step: number,
+  sceneName: "Product" | "Meal"
+) {
+  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
+    return;
+  }
+  await ctx.answerCbQuery();
+  if (ctx.callbackQuery.data === "bot-yes") {
+    (ctx.wizard.state as IDialogueState).updateProduct = true;
+    await ctx.reply(
+      `Updating existing ${sceneName === "Product" ? sceneName : "Meal"}`
+    );
+    sceneName === "Product"
+      ? await productEditMessage(ctx)
+      : await mealEditMessage(ctx);
+    return ctx.wizard.selectStep(step);
+  }
+  await ctx.reply("You can't have two equal products in product base");
+  await ctx.reply(
+    "If you want to enter new product use command /start_calculation"
+  );
+  return ctx.scene.enter("START_CALCULATION");
 }

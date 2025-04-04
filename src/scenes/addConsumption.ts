@@ -150,7 +150,7 @@ export async function waitingForNameAndMassOfProduct(
   if (searchResults.length === 1) {
     const foodElement = searchResults[0];
     foodElement.mass = actualState.mass;
-    await calculateConsumption(foodElement, actualState, ctx, tgId);
+    await calculateConsumption(foodElement, ctx);
     return;
   }
 
@@ -172,14 +172,12 @@ export async function productOptions(ctx: Scenes.WizardContext) {
 
   await ctx.answerCbQuery();
 
-  const actualState = ctx.wizard.state as IConsumedProduct;
   const dialogueState = ctx.wizard.state as IDialogueState;
-  const tgId = actualState.tgId;
   const callBackData = ctx.callbackQuery.data;
 
   const foodElement = Object.values(dialogueState.arrayOfProducts).find(
     (product) => product._id!.toString() === callBackData
   );
 
-  await calculateConsumption(foodElement!, actualState, ctx, tgId);
+  await calculateConsumption(foodElement!, ctx);
 }

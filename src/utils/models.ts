@@ -22,10 +22,10 @@ export type IProductRaiting = IProduct & {
   kcalPerProtein: number;
   kcalPerFiber: number;
 };
+
 export type IDialogueState = Pick<IProduct, "name" | "tgId"> & {
   updateProduct: boolean;
   fromDailyProduct: boolean;
-  fromCombinedProduct: boolean;
   fromFixingStep: boolean;
   fromStartingScene: boolean;
   fromPreparationToDelete: boolean;
@@ -37,7 +37,6 @@ export type IDialogueState = Pick<IProduct, "name" | "tgId"> & {
   fromValidation: boolean;
   arrayOfProducts: IProduct[];
   arrayForDelete: string[];
-  arrToDel: number[];
   mainMessageId: number;
 };
 
@@ -55,8 +54,8 @@ export type IConsumedProduct = IProduct & {
 };
 
 export type IMeal = IDialogueState & {
-  CombinedName: string;
-  CombinedMass: number;
+  MealName: string;
+  MealMass: number;
   products: Record<string, IProduct>;
   actualProductName: string;
   actualProductMass: number;
@@ -70,4 +69,13 @@ export type IPrimalProduct = IProduct & {
 export type InitialState = {
   mainMessageId: number;
   fromStartingScene: true;
+};
+
+export type ButtonType = {
+  reply_markup: {
+    inline_keyboard: {
+      text: string;
+      callback_data: string;
+    }[][];
+  };
 };

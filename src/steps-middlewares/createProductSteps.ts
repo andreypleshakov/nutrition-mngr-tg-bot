@@ -31,10 +31,7 @@ export const createProductStepsList: Middleware<Scenes.WizardContext>[] = [
   fiberPerGram,
 ];
 
-export const steps = createProductStepsList.reduce(
-  (acc, step, index) => {
-    acc[(step as Function).name] = index;
-    return acc;
-  },
-  {} as Record<string, number>
-);
+export const steps = createProductStepsList.reduce((acc, step, index) => {
+  acc[(step as Function).name] = index;
+  return acc;
+}, {} as Record<string, number>);

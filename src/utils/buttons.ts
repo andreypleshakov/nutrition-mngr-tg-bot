@@ -1,15 +1,6 @@
 import { Markup } from "telegraf";
-import { IMeal, IProduct } from "./models";
+import { ButtonType, IMeal, IProduct } from "./models";
 import "dotenv/config";
-
-export type ButtonType = {
-  reply_markup: {
-    inline_keyboard: {
-      text: string;
-      callback_data: string;
-    }[][];
-  };
-};
 
 const webAppUrl = process.env.WEB_APP_URL_TEST!;
 
@@ -193,13 +184,6 @@ export function getFixButtonCombinedProduct(
   return Markup.inlineKeyboard(buttons);
 }
 
-export function getYesOrNoButton(ctx: any): boolean {
-  if (ctx.callbackQuery !== undefined && ctx.callbackQuery.data === "bot-yes") {
-    return true;
-  }
-  return false;
-}
-
 export function getChooseProductButton(searchResults: any[]) {
   const inlineKeyboard = searchResults.map((product) => [
     { text: product.name, callback_data: product._id.toString() },
@@ -213,3 +197,5 @@ export function getChooseProductButton(searchResults: any[]) {
 
   return chooseProductButton;
 }
+export { ButtonType };
+

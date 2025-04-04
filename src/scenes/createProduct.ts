@@ -1,16 +1,15 @@
 import { Scenes } from "telegraf";
 import { IDialogueState, IProduct, InitialState } from "../utils/models";
 import {
-  isValidNumberString,
-  replaceCommaToDot,
+  isValidNumber,
   doesExistTheSameProductWithTgId,
   handleFromFixingStep,
   createOrUpdateProductInProductBase,
   calculateAndRoundNutrient,
   handleFromStartingScene,
+  updateProductMeal,
 } from "../utils/utils";
 import {
-  getYesOrNoButton,
   yesOrNoButton,
   getfixButtonProductBase,
   perButton,
@@ -87,16 +86,10 @@ export async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
 }
 
 export async function customMass(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  const customMass = replaceCommaToDot(ctx.message.text);
+  const customMass = validNumber;
 
   if (customMass === 0) {
     await ctx.reply("Enter mass that greater than 0");
@@ -110,39 +103,15 @@ export async function customMass(ctx: Scenes.WizardContext) {
 }
 
 export async function isUpdatingTheProduct(ctx: Scenes.WizardContext) {
-  const succesButton = getYesOrNoButton(ctx);
-  await ctx.answerCbQuery(undefined);
-
-  if (succesButton) {
-    (ctx.wizard.state as IDialogueState).updateProduct = true;
-
-    await ctx.reply("Updating existing product");
-    await ctx.reply(
-      "Choose per what mass you want to calculate nutrition PER 100 or PER CUSTOM",
-      perButton
-    );
-    return ctx.wizard.selectStep(steps.perHundredOrCustomMass);
-  }
-
-  await ctx.reply("You can't have two equal products in product base");
-  await ctx.reply(
-    "If you want to enter new product use comman /start_calculation"
-  );
-  return ctx.scene.enter("START_CALCULATION");
+  await updateProductMeal(ctx, steps.perHundredOrCustomMass, "Product");
 }
 
 export async function kcalsPerGram(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
   const customMass = (ctx.wizard.state as IDialogueState).customMass;
-  (ctx.wizard.state as IProduct).kcal = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IProduct).kcal = validNumber;
   const fromFixingStep = await handleFromFixingStep(ctx);
 
   if (fromFixingStep) {
@@ -154,17 +123,11 @@ export async function kcalsPerGram(ctx: Scenes.WizardContext) {
 }
 
 export async function proteinsPerGram(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
   const customMass = (ctx.wizard.state as IDialogueState).customMass;
-  (ctx.wizard.state as IProduct).protein = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IProduct).protein = validNumber;
   const fromFixingStep = await handleFromFixingStep(ctx);
 
   if (fromFixingStep) {
@@ -176,18 +139,12 @@ export async function proteinsPerGram(ctx: Scenes.WizardContext) {
 }
 
 export async function totalFatPerGram(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
   const actualState = ctx.wizard.state as IProduct;
   const customMass = (ctx.wizard.state as IDialogueState).customMass;
-  actualState.totalFat = replaceCommaToDot(ctx.message.text);
+  actualState.totalFat = validNumber;
   const fromFixingStep = await handleFromFixingStep(ctx);
 
   if (fromFixingStep) {
@@ -206,17 +163,11 @@ export async function totalFatPerGram(ctx: Scenes.WizardContext) {
 }
 
 export async function saturatedFatPerGram(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
   const actualState = ctx.wizard.state as IProduct;
-  actualState.saturatedFat = replaceCommaToDot(ctx.message.text);
+  actualState.saturatedFat = validNumber;
 
   if (actualState.saturatedFat > actualState.totalFat) {
     await ctx.reply(
@@ -242,18 +193,12 @@ export async function saturatedFatPerGram(ctx: Scenes.WizardContext) {
 }
 
 export async function unsaturatedFatPerGram(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
   const customMass = (ctx.wizard.state as IDialogueState).customMass;
   const actualState = ctx.wizard.state as IProduct;
-  actualState.unsaturatedFat = replaceCommaToDot(ctx.message.text);
+  actualState.unsaturatedFat = validNumber;
 
   actualState.totalFat = actualState.saturatedFat + actualState.unsaturatedFat;
 
@@ -268,18 +213,12 @@ export async function unsaturatedFatPerGram(ctx: Scenes.WizardContext) {
 }
 
 export async function carbohydratesPerGram(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
   const customMass = (ctx.wizard.state as IDialogueState).customMass;
   const actualState = ctx.wizard.state as IProduct;
-  actualState.carbs = replaceCommaToDot(ctx.message.text);
+  actualState.carbs = validNumber;
   const fromFixingStep = await handleFromFixingStep(ctx);
 
   if (fromFixingStep) {
@@ -291,17 +230,11 @@ export async function carbohydratesPerGram(ctx: Scenes.WizardContext) {
 }
 
 export async function fiberPerGram(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
   const actualState = ctx.wizard.state as IProduct;
-  actualState.fiber = replaceCommaToDot(ctx.message.text);
+  actualState.fiber = validNumber;
   const fromFixingStep = await handleFromFixingStep(ctx);
 
   if (fromFixingStep) {

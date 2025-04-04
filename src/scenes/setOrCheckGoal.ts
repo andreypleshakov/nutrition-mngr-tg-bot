@@ -1,10 +1,10 @@
-import { Markup, Scenes } from "telegraf";
+import { Scenes } from "telegraf";
 import {
   setOrCheckGoalStepsList,
   steps,
 } from "../steps-middlewares/setOrCheckGoalSteps";
 import { IProduct } from "../utils/models";
-import { isValidNumberString, replaceCommaToDot } from "../utils/utils";
+import { isValidNumber } from "../utils/utils";
 import { Goal } from "../utils/schemas";
 
 export const setOrCheckGoal = new Scenes.WizardScene<Scenes.WizardContext>(
@@ -20,110 +20,64 @@ export async function startingDialogue(ctx: Scenes.WizardContext) {
 }
 
 export async function setKcal(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as IProduct).kcal = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IProduct).kcal = validNumber;
   await ctx.reply("Set protein goal");
   return ctx.wizard.selectStep(steps.setProtein);
 }
 
 export async function setProtein(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as IProduct).protein = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IProduct).protein = validNumber;
   await ctx.reply("Set total fat goal");
   return ctx.wizard.selectStep(steps.setTotalFat);
 }
 
 export async function setTotalFat(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as IProduct).totalFat = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IProduct).totalFat = validNumber;
   await ctx.reply("Set saturated fat goal");
   return ctx.wizard.selectStep(steps.setSatFat);
 }
 
 export async function setSatFat(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as IProduct).saturatedFat = replaceCommaToDot(
-    ctx.message.text
-  );
+  (ctx.wizard.state as IProduct).saturatedFat = validNumber;
   await ctx.reply("Set unsaturated fat goal");
   return ctx.wizard.selectStep(steps.setUnsatFat);
 }
 
 export async function setUnsatFat(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as IProduct).unsaturatedFat = replaceCommaToDot(
-    ctx.message.text
-  );
+  (ctx.wizard.state as IProduct).unsaturatedFat = validNumber;
   await ctx.reply("Set carbs goal");
   return ctx.wizard.selectStep(steps.setCarbs);
 }
 
 export async function setCarbs(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as IProduct).carbs = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IProduct).carbs = validNumber;
   await ctx.reply("Set fiber goal");
   return ctx.wizard.selectStep(steps.setFiber);
 }
 
 export async function setFiber(ctx: Scenes.WizardContext) {
-  if (
-    !ctx.message ||
-    !("text" in ctx.message) ||
-    !isValidNumberString(ctx.message.text)
-  ) {
-    await ctx.reply("Wrong, write a number in this format: 10/10.0/10,0");
-    return;
-  }
+  const validNumber = await isValidNumber(ctx);
+  if (!validNumber) return;
 
-  (ctx.wizard.state as IProduct).fiber = replaceCommaToDot(ctx.message.text);
+  (ctx.wizard.state as IProduct).fiber = validNumber;
 
   const actualState = ctx.wizard.state as IProduct;
 

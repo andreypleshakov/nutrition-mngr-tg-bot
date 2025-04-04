@@ -26,7 +26,7 @@ const rawPassword =
 const encoderedPassword = encodeURIComponent(rawPassword);
 // const webAppUrlTest = process.env.WEB_APP_URL_TEST;
 
-const app = express();
+// const app = express();
 
 // const corsOptions = {
 //   origin: [webAppUrlTest!],
