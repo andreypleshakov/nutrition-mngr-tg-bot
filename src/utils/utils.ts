@@ -916,3 +916,18 @@ export async function updateProductMeal(
   );
   return ctx.scene.enter("START_CALCULATION");
 }
+
+export async function isSaturBiggerThanTotal(
+  ctx: Scenes.WizardContext
+): Promise<boolean> {
+  if (
+    (ctx.wizard.state as IProduct).saturatedFat >
+    (ctx.wizard.state as IProduct).totalFat
+  ) {
+    await ctx.reply(
+      "Wrong, saturated fat mass can`t be more than total fat mass"
+    );
+    return false;
+  }
+  return true;
+}

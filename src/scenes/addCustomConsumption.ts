@@ -6,6 +6,7 @@ import {
 import { IConsumedProduct, InitialState } from "../utils/models";
 import {
   handleFromStartingScene,
+  isSaturBiggerThanTotal,
   isValidDateFormat,
   isValidNumber,
   isValidText,
@@ -149,6 +150,8 @@ export async function satAndUnsatFat(ctx: Scenes.WizardContext) {
   if (!validNumber) return;
 
   (ctx.wizard.state as IConsumedProduct).saturatedFat = validNumber;
+
+  if (!(await isSaturBiggerThanTotal(ctx))) return;
 
   (ctx.wizard.state as IConsumedProduct).unsaturatedFat =
     (ctx.wizard.state as IConsumedProduct).totalFat -

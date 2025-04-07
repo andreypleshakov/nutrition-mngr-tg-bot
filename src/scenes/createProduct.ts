@@ -8,6 +8,7 @@ import {
   calculateAndRoundNutrient,
   handleFromStartingScene,
   updateProductMeal,
+  isSaturBiggerThanTotal,
 } from "../utils/utils";
 import {
   yesOrNoButton,
@@ -169,12 +170,7 @@ export async function saturatedFatPerGram(ctx: Scenes.WizardContext) {
   const actualState = ctx.wizard.state as IProduct;
   actualState.saturatedFat = validNumber;
 
-  if (actualState.saturatedFat > actualState.totalFat) {
-    await ctx.reply(
-      "Wrong, saturated fat mass can`t be more than total fat mass"
-    );
-    return;
-  }
+  if (!(await isSaturBiggerThanTotal(ctx))) return;
 
   const customMass = (ctx.wizard.state as IDialogueState).customMass;
 
