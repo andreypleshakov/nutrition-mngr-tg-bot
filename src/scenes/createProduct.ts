@@ -171,7 +171,6 @@ export async function saturatedFatPerGram(ctx: Scenes.WizardContext) {
   actualState.saturatedFat = validNumber;
 
   if (!(await isSaturBiggerThanTotal(ctx))) {
-    console.log("SATUR", await isSaturBiggerThanTotal(ctx));
     return;
   }
 

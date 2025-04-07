@@ -46,9 +46,7 @@ export async function todayOrCustomDate(ctx: Scenes.WizardContext) {
   if (callBackData === "today") {
     (ctx.wizard.state as IConsumedProduct).dateOfConsumption =
       new Date().toISOString();
-    await ctx.reply(
-      "Enter product's name and mass (in gram) in this format: NAME MASS (example: apple 100/red apple 0.9/sweet red apple 100/etc.)"
-    );
+    await ctx.reply("Enter product's name");
     return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
   }
 
@@ -71,9 +69,7 @@ export async function customDate(ctx: Scenes.WizardContext) {
   (ctx.wizard.state as IConsumedProduct).dateOfConsumption = new Date(
     ctx.message.text
   ).toISOString();
-  await ctx.reply(
-    "Enter product's name and mass (in gram) in this format: NAME MASS (example: apple 100/red apple 0.9/sweet red apple 100/etc.)"
-  );
+  await ctx.reply("Enter product's name");
   return ctx.wizard.selectStep(steps.waitingForNameAndMassOfProduct);
 }
 
