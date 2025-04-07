@@ -58,7 +58,7 @@ export async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
 
 export async function customMass(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   const customMass = validNumber;
 
@@ -75,7 +75,7 @@ export async function customMass(ctx: Scenes.WizardContext) {
 
 export async function proteinPerSelectedMass(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   (ctx.wizard.state as ICostOfProtein).protein = validNumber;
 
@@ -85,7 +85,7 @@ export async function proteinPerSelectedMass(ctx: Scenes.WizardContext) {
 
 export async function totalMassOfProduct(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
   (ctx.wizard.state as ICostOfProtein).totalMass = validNumber;
   await ctx.reply(
     "Enter currency with cost of product (ex.: usd 100, usd 10.1, usd 10,1"

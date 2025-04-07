@@ -88,7 +88,7 @@ export async function perHundredOrCustomMass(ctx: Scenes.WizardContext) {
 
 export async function customMass(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   const customMass = validNumber;
 
@@ -109,7 +109,7 @@ export async function isUpdatingTheProduct(ctx: Scenes.WizardContext) {
 
 export async function kcalsPerGram(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   const customMass = (ctx.wizard.state as IDialogueState).customMass;
   (ctx.wizard.state as IProduct).kcal = validNumber;
@@ -125,7 +125,7 @@ export async function kcalsPerGram(ctx: Scenes.WizardContext) {
 
 export async function proteinsPerGram(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   const customMass = (ctx.wizard.state as IDialogueState).customMass;
   (ctx.wizard.state as IProduct).protein = validNumber;
@@ -141,7 +141,7 @@ export async function proteinsPerGram(ctx: Scenes.WizardContext) {
 
 export async function totalFatPerGram(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   const actualState = ctx.wizard.state as IProduct;
   const customMass = (ctx.wizard.state as IDialogueState).customMass;
@@ -165,12 +165,15 @@ export async function totalFatPerGram(ctx: Scenes.WizardContext) {
 
 export async function saturatedFatPerGram(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   const actualState = ctx.wizard.state as IProduct;
   actualState.saturatedFat = validNumber;
 
-  if (!(await isSaturBiggerThanTotal(ctx))) return;
+  if (!(await isSaturBiggerThanTotal(ctx))) {
+    console.log("SATUR", await isSaturBiggerThanTotal(ctx));
+    return;
+  }
 
   const customMass = (ctx.wizard.state as IDialogueState).customMass;
 
@@ -190,7 +193,7 @@ export async function saturatedFatPerGram(ctx: Scenes.WizardContext) {
 
 export async function unsaturatedFatPerGram(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   const customMass = (ctx.wizard.state as IDialogueState).customMass;
   const actualState = ctx.wizard.state as IProduct;
@@ -210,7 +213,7 @@ export async function unsaturatedFatPerGram(ctx: Scenes.WizardContext) {
 
 export async function carbohydratesPerGram(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   const customMass = (ctx.wizard.state as IDialogueState).customMass;
   const actualState = ctx.wizard.state as IProduct;
@@ -227,7 +230,7 @@ export async function carbohydratesPerGram(ctx: Scenes.WizardContext) {
 
 export async function fiberPerGram(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   const actualState = ctx.wizard.state as IProduct;
   actualState.fiber = validNumber;

@@ -106,7 +106,7 @@ export async function mass(ctx: Scenes.WizardContext) {
 
 export async function kcal(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   (ctx.wizard.state as IConsumedProduct).kcal = validNumber;
 
@@ -119,7 +119,7 @@ export async function kcal(ctx: Scenes.WizardContext) {
 
 export async function protein(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   (ctx.wizard.state as IConsumedProduct).protein = validNumber;
 
@@ -132,7 +132,7 @@ export async function protein(ctx: Scenes.WizardContext) {
 
 export async function totalFat(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   (ctx.wizard.state as IConsumedProduct).totalFat = validNumber;
 
@@ -147,7 +147,7 @@ export async function totalFat(ctx: Scenes.WizardContext) {
 
 export async function satAndUnsatFat(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   (ctx.wizard.state as IConsumedProduct).saturatedFat = validNumber;
 
@@ -166,7 +166,7 @@ export async function satAndUnsatFat(ctx: Scenes.WizardContext) {
 
 export async function carbs(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   (ctx.wizard.state as IConsumedProduct).carbs = validNumber;
 
@@ -179,7 +179,7 @@ export async function carbs(ctx: Scenes.WizardContext) {
 
 export async function fiber(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   (ctx.wizard.state as IConsumedProduct).fiber = validNumber;
 

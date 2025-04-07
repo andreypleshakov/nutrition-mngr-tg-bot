@@ -310,7 +310,7 @@ export async function fixingAndFinal(ctx: Scenes.WizardContext) {
 
 export async function fixingMassOfProduct(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   const actualState = ctx.wizard.state as IMeal;
   const productName = actualState.actualProductName;

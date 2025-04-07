@@ -21,7 +21,7 @@ export async function startingDialogue(ctx: Scenes.WizardContext) {
 
 export async function setKcal(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   (ctx.wizard.state as IProduct).kcal = validNumber;
   await ctx.reply("Set protein goal");
@@ -30,7 +30,7 @@ export async function setKcal(ctx: Scenes.WizardContext) {
 
 export async function setProtein(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   (ctx.wizard.state as IProduct).protein = validNumber;
   await ctx.reply("Set total fat goal");
@@ -39,7 +39,7 @@ export async function setProtein(ctx: Scenes.WizardContext) {
 
 export async function setTotalFat(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   (ctx.wizard.state as IProduct).totalFat = validNumber;
   await ctx.reply("Set saturated fat goal");
@@ -48,7 +48,7 @@ export async function setTotalFat(ctx: Scenes.WizardContext) {
 
 export async function setSatFat(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   (ctx.wizard.state as IProduct).saturatedFat = validNumber;
   await ctx.reply("Set unsaturated fat goal");
@@ -57,7 +57,7 @@ export async function setSatFat(ctx: Scenes.WizardContext) {
 
 export async function setUnsatFat(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   (ctx.wizard.state as IProduct).unsaturatedFat = validNumber;
   await ctx.reply("Set carbs goal");
@@ -66,7 +66,7 @@ export async function setUnsatFat(ctx: Scenes.WizardContext) {
 
 export async function setCarbs(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   (ctx.wizard.state as IProduct).carbs = validNumber;
   await ctx.reply("Set fiber goal");
@@ -75,7 +75,7 @@ export async function setCarbs(ctx: Scenes.WizardContext) {
 
 export async function setFiber(ctx: Scenes.WizardContext) {
   const validNumber = await isValidNumber(ctx);
-  if (!validNumber) return;
+  if (validNumber === null) return;
 
   (ctx.wizard.state as IProduct).fiber = validNumber;
 
