@@ -19,7 +19,6 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            set -e
             cd /home/pleshakov/nutrition-mngr-tg-bot
 
             echo "🧹 Cleaning up old containers and volumes..."
@@ -28,7 +27,8 @@ jobs:
             docker network prune -f || true
 
             echo "📦 Pulling latest code from GitHub..."
-            git pull origin master
+            git fetch origin master
+            git reset --hard origin/master
 
             echo "🔨 Rebuilding without cache..."
             docker-compose build --no-cache
