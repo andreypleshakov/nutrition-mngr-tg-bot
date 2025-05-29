@@ -18,49 +18,54 @@ import statisticRoutes from "./api/statistic/statisticRoutes";
 import goalRoutes from "./api/goal/goalRoutes";
 import productsRoutes from "./api/products/productsRoutes";
 
+dotenv.config({
+  path: process.env.NODE_ENV === "production" ? ".env.prod" : ".env",
+});
+
 const userName = process.env.MONGODB_USER_NAME;
-const rawPassword =
-  process.env.MONGODB_ADMIN_PASSWORD !== undefined
-    ? process.env.MONGODB_ADMIN_PASSWORD
-    : "";
+const rawPassword = process.env.MONGODB_ADMIN_PASSWORD;
+const tgToken = process.env.TG_BOT_TOKEN;
+
+assert(userName != null, "No MONGODB_USER_NAME environment variable found");
+assert(
+  rawPassword != null,
+  "No MONGODB_ADMIN_PASSWORD environment variable found"
+);
+assert(tgToken != null, "No TG_BOT_TOKEN environment variable found");
+
 const encoderedPassword = encodeURIComponent(rawPassword);
-// const webAppUrlTest = process.env.WEB_APP_URL_TEST;
 
-// const app = express();
+const webAppUrlTest = process.env.WEB_APP_URL;
 
-// const corsOptions = {
-//   origin: [webAppUrlTest!],
-//   methods: ["GET", "POST", "DELETE"],
-//   credentials: true,
-// };
+const app = express();
 
-// app.use(cors(corsOptions));
-// app.use(express.json());
+const corsOptions = {
+  origin: [webAppUrlTest!],
+  methods: ["GET", "POST", "DELETE"],
+  credentials: true,
+};
 
-// const PORT = 3001;
+app.use(cors(corsOptions));
+app.use(express.json());
 
-// app.use("/users", userRoutes);
-// app.use("/statistic", statisticRoutes);
-// app.use("/goal", goalRoutes);
-// app.use("/products", productsRoutes);
+const PORT = 3001;
 
-// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.use("/users", userRoutes);
+app.use("/statistic", statisticRoutes);
+app.use("/goal", goalRoutes);
+app.use("/products", productsRoutes);
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 mongoose
   .connect(
     `mongodb+srv://${userName}:${encoderedPassword}@cluster0.6tfa4iv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
   )
-  .then(() => console.log("Connected!"))
+  .then(() => console.log("Connected to MongoDB!"))
   .catch((error) => {
-    console.error(error);
+    console.error("MongoDB connection error:", error);
+    process.exit(1);
   });
-
-dotenv.config({
-  path: process.env.NODE_ENV === "production" ? ".env.prod" : ".env",
-});
-
-const tgToken = process.env.TG_BOT_TOKEN;
-assert(tgToken != null, "No TG_BOT_TOKEN environment variable found");
 
 const bot = new Telegraf<Scenes.WizardContext>(tgToken!);
 

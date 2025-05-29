@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/app.ts",
     "build": "tsc",
-    "start": "NODE_ENV=production node dist/app.js"
+    "start": "node dist/app.js"
   },
   "keywords": [],
   "author": "",
@@ -23,7 +23,7 @@
     "express": "^4.19.2",
     "google-auth-library": "^9.11.0",
     "mongoose": "^8.4.4",
-    "pnpm": "^9.4.0",
+    "pnpm": "^9.15.9",
     "telegraf": "^4.16.3",
     "telegram-webapps-types": "^1.0.5",
     "typescript": "^5.5.3"

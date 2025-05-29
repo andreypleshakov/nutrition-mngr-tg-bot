@@ -1,25 +1,24 @@
 # Stage 1: Build
-FROM node:18-alpine AS build
-
-WORKDIR /usr/src/app
+FROM node:22 AS builder
+WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install
+RUN pnpm install --frozen-lockfile
 
-COPY tsconfig.json ./
-COPY src ./src
-
+COPY . .
 RUN pnpm run build
 
-# Stage 2: Run
-FROM node:18-alpine
+#Stage 2: Runtime
+FROM node:22-alpine
+WORKDIR /app
 
-WORKDIR /usr/src/app
+# Create a non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
 
 COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --prod
+RUN npm install -g pnpm && pnpm install --prod --frozen-lockfile
 
-COPY --from=build /usr/src/app/dist ./dist
-COPY .env.prod .env
+COPY --from=builder --chown=appuser:appgroup /app/dist ./dist
 
 CMD ["node", "dist/app.js"]
