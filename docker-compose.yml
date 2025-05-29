@@ -1,8 +1,9 @@
 version: "3.9"
 
 services:
-  nutrition-mngr-tg-bot:
+  app:
     build: .
+    container_name: nutrition-mngr-tg-bot
     restart: always
     env_file:
       - .env.prod
