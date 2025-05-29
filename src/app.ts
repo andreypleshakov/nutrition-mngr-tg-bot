@@ -11,12 +11,6 @@ import { productRaiting } from "./scenes/productRaiting";
 import { manipulateConsumptionStatistic } from "./scenes/checkOrDeleteConsumptionStatistic";
 import { addCustomConsumption } from "./scenes/addCustomConsumption";
 import { setOrCheckGoal } from "./scenes/setOrCheckGoal";
-import express from "express";
-import cors from "cors";
-import userRoutes from "./api/users/userRoutes";
-import statisticRoutes from "./api/statistic/statisticRoutes";
-import goalRoutes from "./api/goal/goalRoutes";
-import productsRoutes from "./api/products/productsRoutes";
 
 dotenv.config({
   path: process.env.NODE_ENV === "production" ? ".env.prod" : ".env",
@@ -34,28 +28,6 @@ assert(
 assert(tgToken != null, "No TG_BOT_TOKEN environment variable found");
 
 const encoderedPassword = encodeURIComponent(rawPassword);
-
-const webAppUrlTest = process.env.WEB_APP_URL;
-
-const app = express();
-
-const corsOptions = {
-  origin: [webAppUrlTest!],
-  methods: ["GET", "POST", "DELETE"],
-  credentials: true,
-};
-
-app.use(cors(corsOptions));
-app.use(express.json());
-
-const PORT = 3001;
-
-app.use("/users", userRoutes);
-app.use("/statistic", statisticRoutes);
-app.use("/goal", goalRoutes);
-app.use("/products", productsRoutes);
-
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 mongoose
   .connect(
