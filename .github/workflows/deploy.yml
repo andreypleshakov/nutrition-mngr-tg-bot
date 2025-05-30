@@ -1,0 +1,32 @@
+name: Deploy production to VM
+
+on:
+  push:
+    branches:
+      - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up SSH access
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VM_SSH_KEY }}
+
+      - name: Sync code to VM via rsync
+        run: |
+          rsync -az --delete -e "ssh -o StrictHostKeyChecking=no" ./ ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:${{ secrets.PROJECT_PATH }}
+
+      - name: Restart app on VM
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
+            cd ${{ secrets.PROJECT_PATH }}
+            docker compose pull
+            docker compose down
+            docker compose up -d --build
+          EOF

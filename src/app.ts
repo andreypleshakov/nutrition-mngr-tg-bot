@@ -39,7 +39,7 @@ mongoose
     process.exit(1);
   });
 
-const bot = new Telegraf<Scenes.WizardContext>(tgToken!);
+const bot = new Telegraf<Scenes.WizardContext>(tgToken);
 
 const stage = new Scenes.Stage<Scenes.WizardContext>([
   startCalculation,
