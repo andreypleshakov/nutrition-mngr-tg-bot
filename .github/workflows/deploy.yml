@@ -20,7 +20,7 @@ jobs:
 
       - name: Sync code to VM via rsync
         run: |
-          rsync -az --delete -e "ssh -o StrictHostKeyChecking=no" ./ ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:${{ secrets.PROJECT_PATH }}
+          rsync -az --delete --exclude=".env.prod" -e "ssh -o StrictHostKeyChecking=no" ./ ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:${{ secrets.PROJECT_PATH }}
 
       - name: Restart app on VM
         run: |
