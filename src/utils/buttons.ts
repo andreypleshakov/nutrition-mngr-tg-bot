@@ -7,7 +7,7 @@ const webAppUrl = process.env.WEB_APP_URL_TEST!;
 export const sceneButtons = {
   reply_markup: {
     inline_keyboard: [
-      // [{ text: "Open WebApp", web_app: { url: webAppUrl } }]1,
+      // [{ text: "Open WebApp", web_app: { url: webAppUrl } }],
       [{ text: "Create product", callback_data: "create-product" }],
       [
         {
