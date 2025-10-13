@@ -38,6 +38,7 @@ export type IDialogueState = Pick<IProduct, "name" | "tgId"> & {
   arrayOfProducts: IProduct[];
   arrayForDelete: string[];
   mainMessageId: number;
+  isDateRange: boolean;
 };
 
 export type ICostOfProtein = {

@@ -4,6 +4,9 @@ import {
   getConsumptionStatisticByDateAnTgId,
   isValidDateFormat,
   deleteConsumptionStatisticByDateAnTgId,
+  getAverageConsumptionStatistic,
+  getWeeksOfCurrentMonth,
+  getMonthsOfCurrentYear,
 } from "../utils/utils";
 import {
   IDialogueState,
@@ -13,6 +16,7 @@ import {
 import {
   getTypeOfStatisticButton,
   todayOrCustomDateButton,
+  rangeTypeButtons,
 } from "../utils/buttons";
 import { ConsumedProduct } from "../utils/schemas";
 import {
@@ -58,7 +62,8 @@ export async function optionsOfDateStatistic(ctx: Scenes.WizardContext) {
 
     (ctx.wizard.state as IConsumedProduct).dateOfConsumption =
       startDate.toISOString();
-    const typeOfStatisticButton = getTypeOfStatisticButton();
+    (ctx.wizard.state as IDialogueState).isDateRange = false;
+    const typeOfStatisticButton = getTypeOfStatisticButton(false);
 
     await ctx.reply(
       "General daily statistic - check general consumption statistic of day\n" +
@@ -69,6 +74,19 @@ export async function optionsOfDateStatistic(ctx: Scenes.WizardContext) {
 
     return ctx.wizard.selectStep(steps.typeOfStatistic);
   }
+
+  if (callBackData === "date-range") {
+    (ctx.wizard.state as IDialogueState).isDateRange = true;
+    await ctx.reply(
+      "Select range type:\n" +
+        "Custom Range - enter your own start and end dates\n" +
+        "Week Range - select a week from current month\n" +
+        "Month Range - select a month from current year",
+      Markup.inlineKeyboard(rangeTypeButtons)
+    );
+    return ctx.wizard.selectStep(steps.selectRangeType);
+  }
+
   await ctx.reply("Enter date that you require in this format YYYY-MM-DD");
   return ctx.wizard.selectStep(steps.customDateForStatistic);
 }
@@ -91,12 +109,199 @@ export async function customDateForStatistic(ctx: Scenes.WizardContext) {
   endDate.setDate(startDate.getDate() + 1);
   (ctx.wizard.state as IConsumedProduct).dateOfConsumption =
     startDate.toISOString();
-  const typeOfStatisticButton = getTypeOfStatisticButton();
+  (ctx.wizard.state as IDialogueState).isDateRange = false;
+  const typeOfStatisticButton = getTypeOfStatisticButton(false);
 
   await ctx.reply(
     "General daily statistic - check general consumption statistic of day\n" +
       "List of products - check list of consumed products of day\n" +
       "Delete product - delete consumed product of day",
+    typeOfStatisticButton
+  );
+
+  return ctx.wizard.selectStep(steps.typeOfStatistic);
+}
+
+export async function selectRangeType(ctx: Scenes.WizardContext) {
+  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
+    return;
+  }
+
+  const callBackData = ctx.callbackQuery.data;
+  await ctx.answerCbQuery();
+
+  if (callBackData === "custom-range") {
+    await ctx.reply("Enter start date in format YYYY-MM-DD");
+    return ctx.wizard.selectStep(steps.startDateForRange);
+  }
+
+  if (callBackData === "week-range") {
+    const weeks = getWeeksOfCurrentMonth();
+
+    if (weeks.length === 0) {
+      await ctx.reply("No weeks available in current month");
+      ctx.scene.enter("START_CALCULATION");
+      return;
+    }
+
+    const weekButtons = weeks.map((week, index) => [
+      Markup.button.callback(week.label, `week-${index}`)
+    ]);
+
+    await ctx.reply(
+      "Select a week:",
+      Markup.inlineKeyboard(weekButtons)
+    );
+    return ctx.wizard.selectStep(steps.selectWeek);
+  }
+
+  if (callBackData === "month-range") {
+    const months = getMonthsOfCurrentYear();
+
+    const monthButtons = months.map((month) => [
+      Markup.button.callback(month.label, `month-${month.month}`)
+    ]);
+
+    await ctx.reply(
+      "Select a month:",
+      Markup.inlineKeyboard(monthButtons)
+    );
+    return ctx.wizard.selectStep(steps.selectMonth);
+  }
+}
+
+export async function selectWeek(ctx: Scenes.WizardContext) {
+  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
+    return;
+  }
+
+  const callBackData = ctx.callbackQuery.data;
+  await ctx.answerCbQuery();
+
+  if (callBackData.startsWith("week-")) {
+    const weekIndex = parseInt(callBackData.split("-")[1]);
+    const weeks = getWeeksOfCurrentMonth();
+    const selectedWeek = weeks[weekIndex];
+
+    if (!selectedWeek) {
+      await ctx.reply("Invalid week selection");
+      ctx.scene.enter("START_CALCULATION");
+      return;
+    }
+
+    const startDate = selectedWeek.start;
+    const endDate = new Date(selectedWeek.end);
+    endDate.setDate(endDate.getDate() + 1); // Add 1 day for exclusive end
+
+    (ctx.wizard.state as IConsumedProduct).dateOfConsumption = startDate.toISOString();
+    (ctx.wizard.state as IDialogueState).customMass = endDate.getTime();
+
+    const isDateRange = (ctx.wizard.state as IDialogueState).isDateRange || false;
+    const typeOfStatisticButton = getTypeOfStatisticButton(isDateRange);
+
+    await ctx.reply(
+      "General daily statistic - check general consumption statistic for week\n" +
+        "Average daily consumption - check average daily consumption for week\n" +
+        "List of products - check list of consumed products for week\n" +
+        "Delete product - delete consumed product from week",
+      typeOfStatisticButton
+    );
+
+    return ctx.wizard.selectStep(steps.typeOfStatistic);
+  }
+}
+
+export async function selectMonth(ctx: Scenes.WizardContext) {
+  if (!ctx.callbackQuery || !("data" in ctx.callbackQuery)) {
+    return;
+  }
+
+  const callBackData = ctx.callbackQuery.data;
+  await ctx.answerCbQuery();
+
+  if (callBackData.startsWith("month-")) {
+    const monthIndex = parseInt(callBackData.split("-")[1]);
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
+    const startDate = new Date(currentYear, monthIndex, 1);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(currentYear, monthIndex + 1, 1);
+    endDate.setHours(0, 0, 0, 0);
+
+    (ctx.wizard.state as IConsumedProduct).dateOfConsumption = startDate.toISOString();
+    (ctx.wizard.state as IDialogueState).customMass = endDate.getTime();
+
+    const isDateRange = (ctx.wizard.state as IDialogueState).isDateRange || false;
+    const typeOfStatisticButton = getTypeOfStatisticButton(isDateRange);
+
+    await ctx.reply(
+      "General daily statistic - check general consumption statistic for month\n" +
+        "Average daily consumption - check average daily consumption for month\n" +
+        "List of products - check list of consumed products for month\n" +
+        "Delete product - delete consumed product from month",
+      typeOfStatisticButton
+    );
+
+    return ctx.wizard.selectStep(steps.typeOfStatistic);
+  }
+}
+
+export async function startDateForRange(ctx: Scenes.WizardContext) {
+  if (!ctx.message || !("text" in ctx.message)) {
+    return;
+  }
+
+  if (!isValidDateFormat(ctx.message.text)) {
+    await ctx.reply(
+      "Wrong! Enter start date in this format YYYY-MM-DD"
+    );
+    return;
+  }
+
+  const startDateString = ctx.message.text;
+  const startDate = new Date(startDateString);
+  (ctx.wizard.state as IDialogueState).customMass = startDate.getTime();
+
+  await ctx.reply("Enter end date in format YYYY-MM-DD (this date will be included)");
+  return ctx.wizard.selectStep(steps.endDateForRange);
+}
+
+export async function endDateForRange(ctx: Scenes.WizardContext) {
+  if (!ctx.message || !("text" in ctx.message)) {
+    return;
+  }
+
+  if (!isValidDateFormat(ctx.message.text)) {
+    await ctx.reply(
+      "Wrong! Enter end date in this format YYYY-MM-DD"
+    );
+    return;
+  }
+
+  const endDateString = ctx.message.text;
+  const endDate = new Date(endDateString);
+  endDate.setDate(endDate.getDate() + 1);
+
+  const startDate = new Date((ctx.wizard.state as IDialogueState).customMass);
+
+  if (endDate <= startDate) {
+    await ctx.reply("End date must be after start date. Please enter end date again:");
+    return;
+  }
+
+  (ctx.wizard.state as IConsumedProduct).dateOfConsumption = startDate.toISOString();
+  (ctx.wizard.state as IDialogueState).customMass = endDate.getTime();
+
+  const isDateRange = (ctx.wizard.state as IDialogueState).isDateRange || false;
+  const typeOfStatisticButton = getTypeOfStatisticButton(isDateRange);
+
+  await ctx.reply(
+    "General daily statistic - check general consumption statistic for date range\n" +
+      "Average daily consumption - check average daily consumption for date range\n" +
+      "List of products - check list of consumed products for date range\n" +
+      "Delete product - delete consumed product from date range",
     typeOfStatisticButton
   );
 
@@ -112,18 +317,23 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
 
   const tgId = (ctx.wizard.state as IConsumedProduct).tgId;
   let checkForList = (ctx.wizard.state as IDialogueState).listOfProducts;
-  let deleteConsumption = (ctx.wizard.state as IDialogueState)
-    .deleteConsumption;
   const startDate = (ctx.wizard.state as IConsumedProduct).dateOfConsumption;
-  const endDate = new Date(startDate);
-  endDate.setDate(new Date(startDate).getDate() + 1);
+
+  // Check if we're in date range mode (customMass will contain end date timestamp)
+  const storedEndDate = (ctx.wizard.state as IDialogueState).customMass;
+  const endDate = storedEndDate
+    ? new Date(storedEndDate)
+    : (() => {
+        const date = new Date(startDate);
+        date.setDate(new Date(startDate).getDate() + 1);
+        return date;
+      })();
 
   await ctx.answerCbQuery();
 
   switch (callBackData) {
     case "general-daily-statistic":
       checkForList = false;
-      deleteConsumption = false;
       await getConsumptionStatisticByDateAnTgId(
         tgId,
         checkForList,
@@ -132,9 +342,16 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
         ctx
       );
       break;
+    case "average-daily-statistic":
+      await getAverageConsumptionStatistic(
+        tgId,
+        startDate,
+        endDate.toISOString(),
+        ctx
+      );
+      break;
     case "list-of-consumed-products":
       checkForList = true;
-      deleteConsumption = false;
       await getConsumptionStatisticByDateAnTgId(
         tgId,
         checkForList,
@@ -145,7 +362,6 @@ export async function typeOfStatistic(ctx: Scenes.WizardContext) {
       break;
     case "delete-consumed-product":
       checkForList = false;
-      deleteConsumption = true;
       const foods = await deleteConsumptionStatisticByDateAnTgId(
         startDate,
         endDate.toISOString(),
