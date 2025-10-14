@@ -5,6 +5,11 @@ import {
   optionsOfDateStatistic,
   startingDialogue,
   typeOfStatistic,
+  startDateForRange,
+  endDateForRange,
+  selectRangeType,
+  selectWeek,
+  selectMonth,
 } from "../scenes/checkOrDeleteConsumptionStatistic";
 
 export const manipulateConsumptionStatisticStepsList: Middleware<Scenes.WizardContext>[] =
@@ -12,6 +17,11 @@ export const manipulateConsumptionStatisticStepsList: Middleware<Scenes.WizardCo
     startingDialogue,
     optionsOfDateStatistic,
     customDateForStatistic,
+    selectRangeType,
+    startDateForRange,
+    endDateForRange,
+    selectWeek,
+    selectMonth,
     typeOfStatistic,
     deleteConsumedProduct,
   ];

@@ -150,21 +150,43 @@ export const replaceAddOrIgnoreButton = {
 };
 
 export const todayOrCustomDateButton = [
-  Markup.button.callback("Today", "today"),
-  Markup.button.callback("Custom Date", "custom-date"),
+  [Markup.button.callback("Today", "today")],
+  [Markup.button.callback("Yesterday", "yesterday")],
+  [Markup.button.callback("Custom Date", "custom-date")],
+  [Markup.button.callback("Date Range", "date-range")],
 ];
 
-export function getTypeOfStatisticButton() {
-  return Markup.inlineKeyboard([
+export const rangeTypeButtons = [
+  [Markup.button.callback("Custom Range", "custom-range")],
+  [Markup.button.callback("Week Range", "week-range")],
+  [Markup.button.callback("Month Range", "month-range")],
+];
+
+export function getTypeOfStatisticButton(isDateRange: boolean = false) {
+  const buttons = [
     [
       Markup.button.callback(
         "General daily statistic",
         "general-daily-statistic"
       ),
     ],
+  ];
+
+  if (isDateRange) {
+    buttons.push([
+      Markup.button.callback(
+        "Average daily statistic",
+        "average-daily-statistic"
+      ),
+    ]);
+  }
+
+  buttons.push(
     [Markup.button.callback("List products", "list-of-consumed-products")],
-    [Markup.button.callback("Delete product", "delete-consumed-product")],
-  ]);
+    [Markup.button.callback("Delete product", "delete-consumed-product")]
+  );
+
+  return Markup.inlineKeyboard(buttons);
 }
 
 export function getFixButtonCombinedProduct(

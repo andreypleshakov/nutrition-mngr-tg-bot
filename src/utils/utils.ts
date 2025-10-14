@@ -180,6 +180,76 @@ export function isValidDateFormat(date: string): boolean {
   return true;
 }
 
+export function getMonday(date: Date): Date {
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+  const monday = new Date(date);
+  monday.setDate(diff);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
+export function getWeeksOfCurrentMonth(): { start: Date; end: Date; label: string }[] {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const currentWeekStart = getMonday(now);
+
+  // Get first day of current month
+  const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+
+  // Get last day of current month
+  const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
+
+  const weeks: { start: Date; end: Date; label: string }[] = [];
+
+  // Start from the Monday of the week containing the first day of the month
+  let weekStart = getMonday(firstDayOfMonth);
+
+  while (weekStart <= currentWeekStart) {
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6); // Sunday
+
+    // Check if this week overlaps with current month
+    if (weekStart <= lastDayOfMonth && weekEnd >= firstDayOfMonth) {
+      const startLabel = formatDate(weekStart);
+      const endLabel = formatDate(weekEnd);
+      weeks.push({
+        start: new Date(weekStart),
+        end: new Date(weekEnd),
+        label: `Week ${startLabel} - ${endLabel}`
+      });
+    }
+
+    // Move to next week
+    weekStart.setDate(weekStart.getDate() + 7);
+  }
+
+  return weeks;
+}
+
+export function getMonthsOfCurrentYear(): { month: number; label: string }[] {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-based
+
+  const monthNames = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const months: { month: number; label: string }[] = [];
+
+  for (let i = 0; i <= currentMonth; i++) {
+    months.push({
+      month: i,
+      label: `${monthNames[i]} ${currentYear}`
+    });
+  }
+
+  return months;
+}
+
 function replaceCommaToDot(input: string): number {
   const finalInput = input.trim();
   return parseFloat(finalInput.replace(",", "."));
@@ -790,6 +860,116 @@ Type of fats in percents:
 
 Saturated fats: ${totals.satFatPercent}%
 Unsaturated fats: ${totals.unsatFatPercent}%`;
+
+  await ctx.reply(productInfo);
+  ctx.scene.enter("START_CALCULATION");
+  return;
+}
+
+export async function getAverageConsumptionStatistic(
+  tgId: number,
+  startDate: string,
+  endDate: string,
+  ctx: Scenes.WizardContext
+): Promise<void> {
+  const startDateString = formatDate(new Date(startDate));
+  const endDateObj = new Date(endDate);
+  endDateObj.setDate(endDateObj.getDate() - 1);
+  const endDateString = formatDate(endDateObj);
+  const dateLabel = `${startDateString} to ${endDateString}`;
+
+  const filter = {
+    dateOfConsumption: { $gte: startDate, $lt: endDate },
+    tgId: tgId,
+  };
+
+  const foods = await ConsumedProduct.find(filter);
+
+  if (foods.length === 0) {
+    await ctx.reply("You don't have any consumption records in this date range");
+    ctx.scene.enter("START_CALCULATION");
+    return;
+  }
+
+  // Group foods by date to count unique days with consumption
+  const uniqueDates = new Set<string>();
+  foods.forEach((food) => {
+    const dateOnly = formatDate(new Date(food.dateOfConsumption));
+    if (dateOnly) {
+      uniqueDates.add(dateOnly);
+    }
+  });
+
+  const daysWithConsumption = uniqueDates.size;
+
+  const totals = foods.reduce(
+    (accumulator, food) => {
+      accumulator.mass += food.mass;
+      accumulator.kcal += food.kcal;
+      accumulator.protein += food.protein;
+      accumulator.totalFat += food.totalFat;
+      accumulator.saturatedFat += food.saturatedFat;
+      accumulator.unsaturatedFat += food.unsaturatedFat;
+      accumulator.carbs += food.carbs;
+      accumulator.fiber += food.fiber;
+
+      return accumulator;
+    },
+    {
+      mass: 0,
+      kcal: 0,
+      protein: 0,
+      totalFat: 0,
+      saturatedFat: 0,
+      unsaturatedFat: 0,
+      carbs: 0,
+      fiber: 0,
+    }
+  );
+
+  // Calculate averages
+  const averages = {
+    mass: totals.mass / daysWithConsumption,
+    kcal: totals.kcal / daysWithConsumption,
+    protein: totals.protein / daysWithConsumption,
+    totalFat: totals.totalFat / daysWithConsumption,
+    saturatedFat: totals.saturatedFat / daysWithConsumption,
+    unsaturatedFat: totals.unsaturatedFat / daysWithConsumption,
+    carbs: totals.carbs / daysWithConsumption,
+    fiber: totals.fiber / daysWithConsumption,
+    tgId: tgId,
+  };
+
+  const proteinPercent = calculatePercentageOfNutrient(averages.protein, averages);
+  const totalFatPercent = calculatePercentageOfNutrient(averages.totalFat, averages);
+  const carbPercent = calculatePercentageOfNutrient(averages.carbs, averages);
+  const satFatPercent = calculateFatTypePercentage(averages.saturatedFat, averages.totalFat);
+  const unsatFatPercent = calculateFatTypePercentage(averages.unsaturatedFat, averages.totalFat);
+
+  const productInfo = `
+Average Daily Consumption
+Date range: ${dateLabel}
+Days with consumption: ${daysWithConsumption}
+-------------------
+Average Calories: ${Math.round(averages.kcal)}
+-------------------
+Average Nutritions in gram:
+
+Proteins: ${Math.round(averages.protein)}g
+Total Fat: ${Math.round(averages.totalFat)}g
+Carbohydrates: ${Math.round(averages.carbs)}g
+Fiber: ${Math.round(averages.fiber)}g
+-------------------
+Nutritions in perecents:
+
+Proteins: ${proteinPercent}%
+Total Fat: ${totalFatPercent}%
+Carbohydrates: ${carbPercent}%
+-------------------
+Type of fats in percents:
+
+Saturated fats: ${satFatPercent}%
+Unsaturated fats: ${unsatFatPercent}%`;
 
   await ctx.reply(productInfo);
   ctx.scene.enter("START_CALCULATION");
