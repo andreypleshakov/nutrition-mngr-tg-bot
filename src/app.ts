@@ -2,6 +2,9 @@ import { Telegraf, Scenes, session } from "telegraf";
 import "dotenv/config";
 import dotenv from "dotenv";
 import assert from "assert-ts";
+import express from "express";
+import cors from "cors";
+import bodyParser from "body-parser";
 import { addConsumption } from "./scenes/addConsumption";
 import { createProduct } from "./scenes/createProduct";
 import { createCombinedProduct } from "./scenes/createCombinedProduct";
@@ -11,6 +14,10 @@ import { productRaiting } from "./scenes/productRaiting";
 import { manipulateConsumptionStatistic } from "./scenes/checkOrDeleteConsumptionStatistic";
 import { addCustomConsumption } from "./scenes/addCustomConsumption";
 import { setOrCheckGoal } from "./scenes/setOrCheckGoal";
+import goalRoutes from "./api/goal/goalRoutes";
+import productsRoutes from "./api/products/productsRoutes";
+import statisticRoutes from "./api/statistic/statisticRoutes";
+import userRoutes from "./api/users/userRoutes";
 
 dotenv.config({
   path: process.env.NODE_ENV === "production" ? ".env.prod" : ".env",
@@ -74,6 +81,21 @@ bot.help((ctx) =>
 
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
+
+// Express API server
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+
+// Mount API routes
+app.use("/goal", goalRoutes);
+app.use("/products", productsRoutes);
+app.use("/statistic", statisticRoutes);
+app.use("/users", userRoutes);
+
+app.listen(3001, () => {
+  console.log("API server running on http://localhost:3001");
+});
 
 console.log("Starting application");
 start();

@@ -5,14 +5,14 @@ import {
   getDailyStatistic,
 } from "./statisticService";
 
-export async function getDailyStat(req: Request, res: Response) {
+export async function getDailyStat(req: Request<{ tgId: string }>, res: Response) {
   const tgId = parseInt(req.params.tgId, 10);
   const { startDate, endDate } = req.query;
   const dailyStat = await getDailyStatistic(tgId, startDate as string, endDate as string);
   res.json(dailyStat);
 }
 
-export async function deleteDailyStat(req: Request, res: Response) {
+export async function deleteDailyStat(req: Request<{ tgId: string; documentId: string }>, res: Response) {
   try {
     const tgId = Number(req.params.tgId);
     const id = req.params.documentId;

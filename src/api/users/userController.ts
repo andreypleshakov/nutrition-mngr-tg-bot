@@ -7,7 +7,7 @@ export async function getUsers(req: Request, res: Response) {
   res.json(users);
 }
 
-export async function getUser(req: Request, res: Response) {
+export async function getUser(req: Request<{ tgId: string }>, res: Response) {
   const tgId = parseInt(req.params.tgId, 10);
   const user: IUser | null = await getUserByTgId(tgId);
   res.json(user);
